@@ -1,3 +1,4 @@
+import { login, logout, me } from './auth';
 import { err, type Env } from './http';
 import { checkKode, geocode, getPhoto, getSnapshot } from './public';
 import { handleUpload } from './upload';
@@ -19,6 +20,12 @@ export default {
         return req.method === 'POST' ? handleUpload(req, env, ctx) : err('not_found', 404);
       case '/api/geocode':
         return req.method === 'GET' ? geocode(new URL(req.url), env) : err('not_found', 404);
+      case '/api/admin/login':
+        return req.method === 'POST' ? login(req, env) : err('not_found', 404);
+      case '/api/admin/logout':
+        return req.method === 'POST' ? logout(req, env) : err('not_found', 404);
+      case '/api/admin/me':
+        return req.method === 'GET' ? me(req, env) : err('not_found', 404);
       default:
         return err('not_found', 404);
     }

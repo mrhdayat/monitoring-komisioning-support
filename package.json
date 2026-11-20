@@ -7,7 +7,7 @@
     "build": "tsc -b && vite build",
     "deploy": "npm run build && wrangler deploy",
     "db:local": "wrangler d1 migrations apply komisioning --local",
-    "admin:create": "node scripts/create-admin.mjs"
+    "admin:create": "node --experimental-strip-types --no-warnings scripts/create-admin.mjs"
   },
   "private": true,
   "type": "module",
