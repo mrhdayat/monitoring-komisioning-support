@@ -2,6 +2,7 @@ import { handleAdmin } from './admin';
 import { login, logout, me } from './auth';
 import { err, type Env } from './http';
 import { checkKode, geocode, getPhoto, getSnapshot } from './public';
+import { purgeExpired } from './purge';
 import { handleUpload } from './upload';
 
 export default {
@@ -30,5 +31,8 @@ export default {
       default:
         return pathname.startsWith('/api/admin/') ? handleAdmin(req, env) : err('not_found', 404);
     }
+  },
+  scheduled(_c, env, ctx) {
+    ctx.waitUntil(purgeExpired(env, Date.now()));
   },
 } satisfies ExportedHandler<Env>;
