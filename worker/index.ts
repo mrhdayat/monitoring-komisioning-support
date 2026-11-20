@@ -1,8 +1,9 @@
 import { err, type Env } from './http';
 import { checkKode, geocode, getPhoto, getSnapshot } from './public';
+import { handleUpload } from './upload';
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(req.url);
     if (!pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
     const m = req.method === 'GET' && pathname.match(/^\/api\/(photo|check)\/([^/]+)$/);
@@ -14,6 +15,8 @@ export default {
     switch (pathname) {
       case '/api/snapshot':
         return req.method === 'GET' ? getSnapshot(req, env) : err('not_found', 404);
+      case '/api/photos':
+        return req.method === 'POST' ? handleUpload(req, env, ctx) : err('not_found', 404);
       case '/api/geocode':
         return req.method === 'GET' ? geocode(new URL(req.url), env) : err('not_found', 404);
       default:
