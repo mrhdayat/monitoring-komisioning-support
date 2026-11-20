@@ -3,3 +3,8 @@
 .remember/
 *.xlsx
 WhatsApp Image*
+node_modules/
+dist/
+.wrangler/
+graphify-out/
+*.tsbuildinfo

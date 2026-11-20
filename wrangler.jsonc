@@ -1,0 +1,9 @@
+{
+  "name": "komisioning",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": { "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "komisioning", "database_id": "local", "migrations_dir": "migrations" }],
+  "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "komisioning-foto" }],
+  "triggers": { "crons": ["0 16 * * *"] } // 00:00 WITA
+}
