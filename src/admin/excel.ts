@@ -61,8 +61,12 @@ export function parseSheRows(rows: unknown[][]): { byPeriod: Map<string, ImportU
   return { byPeriod, errors };
 }
 
+// range: 0 mulai dari baris 1 Excel meski !ref mulai lebih bawah; baris kosong dipertahankan agar indeks+1 = nomor baris Excel
+export const rowsFromSheet = (ws: XLSX.WorkSheet): unknown[][] =>
+  XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, range: 0 });
+
 export async function readSheFile(file: File): Promise<ReturnType<typeof parseSheRows>> {
   const wb = XLSX.read(await file.arrayBuffer());
   const ws = wb.Sheets[wb.SheetNames[0]];
-  return parseSheRows(XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, blankrows: false }));
+  return parseSheRows(rowsFromSheet(ws));
 }

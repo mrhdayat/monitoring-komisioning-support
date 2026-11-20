@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { parseBerlakuAkhir, parseSheRows } from './excel';
+import * as XLSX from 'xlsx';
+import { parseBerlakuAkhir, parseSheRows, rowsFromSheet } from './excel';
 
 const H = ['No', 'No Lambung', 'Perusahaan', 'Kelompok Unit', 'Jenis Unit', 'Komisioner', 'Berlaku Akhir', 'Week', 'Periode', 'Status'];
 const row = (n: string, d = '01-Jan-2027', per = 'Des/2026') =>
@@ -42,5 +43,12 @@ describe('excel SHE', () => {
     expect(errors).toHaveLength(2);
     expect(errors[0]).toMatch(/^Baris 2: periode tidak valid/);
     expect(errors[1]).toMatch(/^Baris 3: No Lambung kosong/);
+  });
+  test('nomor baris error = baris Excel asli (baris kosong, !ref tidak mulai di baris 1)', () => {
+    const rows = [H, row('A'), [], [], row('B', '31-Feb-2027')];
+    const expected = ['Baris 5: tanggal Berlaku Akhir tidak valid ("31-Feb-2027")'];
+    expect(parseSheRows(rowsFromSheet(XLSX.utils.aoa_to_sheet(rows))).errors).toEqual(expected);
+    const ws = XLSX.utils.aoa_to_sheet(rows.slice(0, 1).concat(rows.slice(1)), { origin: 'A2' });
+    expect(parseSheRows(rowsFromSheet(ws)).errors).toEqual(['Baris 6: tanggal Berlaku Akhir tidak valid ("31-Feb-2027")']);
   });
 });
