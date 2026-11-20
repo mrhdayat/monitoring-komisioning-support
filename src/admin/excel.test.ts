@@ -48,7 +48,7 @@ describe('excel SHE', () => {
     const rows = [H, row('A'), [], [], row('B', '31-Feb-2027')];
     const expected = ['Baris 5: tanggal Berlaku Akhir tidak valid ("31-Feb-2027")'];
     expect(parseSheRows(rowsFromSheet(XLSX.utils.aoa_to_sheet(rows))).errors).toEqual(expected);
-    const ws = XLSX.utils.aoa_to_sheet(rows.slice(0, 1).concat(rows.slice(1)), { origin: 'A2' });
+    const ws = XLSX.utils.sheet_add_aoa(XLSX.utils.aoa_to_sheet([]), rows, { origin: 'A2' });
     expect(parseSheRows(rowsFromSheet(ws)).errors).toEqual(['Baris 6: tanggal Berlaku Akhir tidak valid ("31-Feb-2027")']);
   });
 });
