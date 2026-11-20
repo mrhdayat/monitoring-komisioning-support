@@ -1,4 +1,6 @@
 import { createRoot } from 'react-dom/client';
+import './styles/tokens.css';
+import './styles/base.css';
 import App from './App';
 import { processQueue } from './lib/queue';
 
