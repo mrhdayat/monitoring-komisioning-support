@@ -26,3 +26,9 @@ export interface PhotoMeta {        // header X-Foto-Meta = encodeURIComponent(J
 export type UploadOk = 'dipakai' | 'lebih_baru_ada' | 'duplikat';
 export type UploadErr = 'unit_tidak_berlaku' | 'lewat_expired' | 'kode_bentrok' | 'invalid';
 // HTTP: 200 {result: UploadOk} · 422 {error:'unit_tidak_berlaku'|'lewat_expired'} · 409 {error:'kode_bentrok'} · 400 {error:'invalid'}
+
+export interface ImportUnit {
+  no_lambung: string; perusahaan: string; kelompok_unit: string; jenis_unit: string;
+  berlaku_akhir: string; // YYYY-MM-DD
+  week: string; status_she: string;
+}
