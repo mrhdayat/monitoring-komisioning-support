@@ -23,9 +23,12 @@ function parseMeta(header: string | null): PhotoMeta | null {
 // Urutan persis spec §8a.
 export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext, now = Date.now()): Promise<Response> {
   // 1. Validasi. ponytail: body dibaca ke memori, bukan di-stream; tanpa decode, ≤ 2 MB murah. Ganti ke stream bila batas dinaikkan.
-  if (Number(req.headers.get('content-length') ?? 0) > MAX_BYTES) return err('invalid', 400);
+  const len = req.headers.get('content-length');
+  if (!len || !/^\d+$/.test(len)) return err('invalid', 411);
+  if (Number(len) > MAX_BYTES) return err('invalid', 400);
   const m = parseMeta(req.headers.get('X-Foto-Meta'));
-  if (!m) return err('invalid', 400);
+  // Jepretan tidak mungkin lebih akhir dari jam HP saat kirim (+1 menit); cegah capturedAt palsu yang selalu menang §8a.
+  if (!m || m.capturedAt > m.deviceNow + 60_000) return err('invalid', 400);
   const buf = await req.arrayBuffer();
   const b = new Uint8Array(buf, 0, Math.min(3, buf.byteLength));
   if (buf.byteLength > MAX_BYTES || b[0] !== 0xff || b[1] !== 0xd8 || b[2] !== 0xff) return err('invalid', 400);

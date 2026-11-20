@@ -13,11 +13,17 @@ const base: PhotoMeta = {
   lat: -1.2, lon: 116.5, accuracy: 10, address: 'Jl. Tes', nama: 'Budi', nrp: '123',
 };
 
-async function send(meta: Partial<PhotoMeta>, now = NOW, body: BodyInit = JPEG, metaHeader?: string) {
+const metaOf = (meta: Partial<PhotoMeta>) => encodeURIComponent(JSON.stringify({ ...base, ...meta }));
+
+async function send(meta: Partial<PhotoMeta>, now = NOW, body: Uint8Array = JPEG, metaHeader?: string) {
   const req = new Request('https://x/api/photos', {
     method: 'POST', body,
-    headers: { 'X-Foto-Meta': metaHeader ?? encodeURIComponent(JSON.stringify({ ...base, ...meta })) },
+    headers: { 'X-Foto-Meta': metaHeader ?? metaOf(meta), 'Content-Length': String(body.byteLength) },
   });
+  return call(req, now);
+}
+
+async function call(req: Request, now = NOW) {
   const ctx = createExecutionContext();
   const res = await handleUpload(req, env as Env, ctx, now);
   await waitOnExecutionContext(ctx);
@@ -147,6 +153,23 @@ describe('upload', () => {
       await send({}, NOW, JPEG, '%%%'),
     ];
     for (const r of bad) expect(r).toEqual({ status: 400, body: { error: 'invalid' } });
+    expect(await rows()).toHaveLength(0);
+  });
+
+  it('jepret di masa depan menurut jam HP sendiri → 400 invalid', async () => {
+    expect(await send({ capturedAt: NOW + 60_001 })).toEqual({ status: 400, body: { error: 'invalid' } });
+    expect(await send({ capturedAt: NOW + 60_000 })).toEqual({ status: 200, body: { result: 'dipakai' } });
+  });
+
+  it('tanpa Content-Length / tidak numerik → 411 invalid', async () => {
+    const stream = () => new ReadableStream({ start(c) { c.enqueue(JPEG); c.close(); } });
+    const noLen = new Request('https://x/api/photos', { method: 'POST', body: stream(), headers: { 'X-Foto-Meta': metaOf({}) } });
+    expect(noLen.headers.get('content-length')).toBeNull();
+    expect(await call(noLen)).toEqual({ status: 411, body: { error: 'invalid' } });
+    const bad = new Request('https://x/api/photos', {
+      method: 'POST', body: JPEG, headers: { 'X-Foto-Meta': metaOf({}), 'Content-Length': 'abc' },
+    });
+    expect(await call(bad)).toEqual({ status: 411, body: { error: 'invalid' } });
     expect(await rows()).toHaveLength(0);
   });
 
