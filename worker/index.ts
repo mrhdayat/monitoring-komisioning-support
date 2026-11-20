@@ -1,3 +1,4 @@
+import { handleAdmin } from './admin';
 import { login, logout, me } from './auth';
 import { err, type Env } from './http';
 import { checkKode, geocode, getPhoto, getSnapshot } from './public';
@@ -27,7 +28,7 @@ export default {
       case '/api/admin/me':
         return req.method === 'GET' ? me(req, env) : err('not_found', 404);
       default:
-        return err('not_found', 404);
+        return pathname.startsWith('/api/admin/') ? handleAdmin(req, env) : err('not_found', 404);
     }
   },
 } satisfies ExportedHandler<Env>;
