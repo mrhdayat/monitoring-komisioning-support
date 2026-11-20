@@ -67,6 +67,11 @@ describe('auth', () => {
     expect((await doLogin('rahasia', NOW + 16 * MIN)).status).toBe(200);
   });
 
+  it('5 login salah serentak → akun terkunci', async () => {
+    await Promise.all(Array.from({ length: 5 }, () => doLogin('salah')));
+    expect((await doLogin('rahasia')).status).toBe(423);
+  });
+
   it('login sukses mereset failed_count', async () => {
     for (let i = 0; i < 4; i++) await doLogin('salah');
     expect((await row())!.failed_count).toBe(4);

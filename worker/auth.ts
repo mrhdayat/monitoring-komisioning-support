@@ -6,6 +6,7 @@ export { PBKDF2_ITER, hashPassword, verifyPassword };
 const WEEK = 7 * 24 * 3600;
 const LOCK_MS = 15 * 60_000;
 const MAX_FAIL = 5;
+const DUMMY_HASH = `pbkdf2-sha256$${PBKDF2_ITER}$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=`;
 
 const sha256Hex = async (s: string) =>
   [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))]
@@ -33,14 +34,17 @@ export async function login(req: Request, env: Env, now = Date.now()): Promise<R
   if (!b || typeof b.username !== 'string' || typeof b.password !== 'string') return err('login_gagal', 401);
   const a = await env.DB.prepare('SELECT id, password_hash, failed_count, locked_until FROM admins WHERE username = ?')
     .bind(b.username).first<{ id: number; password_hash: string; failed_count: number; locked_until: number }>();
-  if (!a) return err('login_gagal', 401);
+  if (!a) {
+    await verifyPassword(b.password, DUMMY_HASH); // samakan waktu respons dengan password salah
+    return err('login_gagal', 401);
+  }
   if (a.locked_until > now) return json({ error: 'terkunci', until: a.locked_until }, 423);
 
   if (!(await verifyPassword(b.password, a.password_hash))) {
-    const n = a.failed_count + 1;
-    await (n >= MAX_FAIL
-      ? env.DB.prepare('UPDATE admins SET failed_count = 0, locked_until = ? WHERE id = ?').bind(now + LOCK_MS, a.id)
-      : env.DB.prepare('UPDATE admins SET failed_count = ? WHERE id = ?').bind(n, a.id)).run();
+    const r = await env.DB.prepare('UPDATE admins SET failed_count = failed_count + 1 WHERE id = ? RETURNING failed_count')
+      .bind(a.id).first<{ failed_count: number }>();
+    if (r && r.failed_count >= MAX_FAIL)
+      await env.DB.prepare('UPDATE admins SET failed_count = 0, locked_until = ? WHERE id = ?').bind(now + LOCK_MS, a.id).run();
     return err('login_gagal', 401);
   }
 
