@@ -1,4 +1,3 @@
-import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute, type PrecacheEntry } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { listQueue, processQueue } from './lib/queue';
@@ -7,12 +6,11 @@ import { listQueue, processQueue } from './lib/queue';
 type SyncEvent = Event & { tag: string; waitUntil(p: Promise<unknown>): void };
 declare const self: {
   __WB_MANIFEST: (string | PrecacheEntry)[];
-  skipWaiting(): Promise<void>;
   addEventListener(type: 'sync', listener: (e: SyncEvent) => void): void;
 };
 
-self.skipWaiting();
-clientsClaim();
+// Tanpa skipWaiting/clientsClaim: SW baru aktif setelah semua tab ditutup, supaya halaman lama tetap bisa
+// memuat chunk watermark + font ber-hash miliknya dari precache lama.
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 // Semua navigasi ke index.html, kecuali /api/* (tidak pernah di-cache; tidak ada route lain untuk /api).

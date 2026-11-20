@@ -156,9 +156,16 @@ describe('upload', () => {
     expect(await rows()).toHaveLength(0);
   });
 
-  it('jepret di masa depan menurut jam HP sendiri → 400 invalid', async () => {
-    expect(await send({ capturedAt: NOW + 60_001 })).toEqual({ status: 400, body: { error: 'invalid' } });
-    expect(await send({ capturedAt: NOW + 60_000 })).toEqual({ status: 200, body: { result: 'dipakai' } });
+  it('jepret di masa depan menurut jam HP sendiri → diterima, flag jam, t_koreksi ≤ now', async () => {
+    expect(await send({ capturedAt: NOW + 86_400_000 })).toEqual({ status: 200, body: { result: 'dipakai' } });
+    const [r] = await rows();
+    expect(r.flags.split(',')).toContain('jam');
+    expect(r.captured_at_corrected).toBeLessThanOrEqual(NOW);
+    // Foto yang benar-benar dijepret lebih akhir tetap menang.
+    const later = NOW + 60_000;
+    expect(await send({ kode: 'BBBB-0002', capturedAt: later, deviceNow: later }, later))
+      .toEqual({ status: 200, body: { result: 'dipakai' } });
+    expect((await rows()).map((x) => x.kode_foto)).toEqual(['BBBB-0002']);
   });
 
   it('tanpa Content-Length / tidak numerik → 411 invalid', async () => {

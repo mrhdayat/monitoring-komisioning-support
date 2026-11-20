@@ -6,7 +6,11 @@ import { setMekanik } from './mekanik';
 vi.mock('./watermark', () => ({
   watermarkText: (p: { kode: string }) => ({ kode: p.kode }),
   loadWatermarkFont: async () => {},
-  renderWatermarked: async (_raw: Blob, t: { kode: string }) => new Blob([`final ${t.kode}`], { type: 'image/jpeg' }),
+  renderWatermarked: async (raw: Blob, t: { kode: string }) => {
+    const r = await raw.text();
+    if (r === 'rusak') throw new Error('gambar rusak');
+    return new Blob([`final ${t.kode}`], { type: r === 'png' ? 'image/png' : 'image/jpeg' });
+  },
 }));
 
 const item = (over: Partial<QueueItem> = {}): QueueItem => ({
@@ -46,7 +50,7 @@ test('decide', () => {
   expect(decide(200, { result: 'lebih_baru_ada' })).toBe('hapus');
   expect(decide(409, {})).toBe('kode_baru');
   expect(decide(422, {})).toBe('tolak');
-  expect(decide(400, { error: 'invalid' })).toBe('tolak');
+  expect(decide(400, { error: 'invalid' })).toBe('tahan');
   expect(decide(503, {})).toBe('ulang');
   expect(decide(0, null)).toBe('ulang');
 });
@@ -122,4 +126,52 @@ test('processQueue: tanpa mekanik tidak mengirim apa pun', async () => {
   const sent = mockFetch();
   expect(await processQueue({ render: false })).toEqual({ sent: 0, left: 1, notices: [] });
   expect(sent).toHaveLength(0);
+});
+
+test('processQueue: 400 menyimpan item dengan pesan, lanjut ke item berikutnya', async () => {
+  await enqueue(item({ kode: 'AAAA-0001', capturedAt: 1 }));
+  await enqueue(item({ kode: 'AAAA-0002', capturedAt: 2 }));
+  const sent = mockFetch([400, { error: 'invalid' }], [200, { result: 'dipakai' }]);
+  expect(await processQueue({ render: false })).toEqual({ sent: 1, left: 1, notices: [] });
+  expect(sent).toHaveLength(2);
+  const [it] = await listQueue();
+  expect(it.kode).toBe('AAAA-0001');
+  expect(it.error).toBe('Data foto ditolak server, hubungi admin');
+});
+
+test('processQueue: render gagal atau hasil bukan JPEG → item disimpan, tidak dikirim', async () => {
+  await enqueue(item({ kode: 'AAAA-0001', capturedAt: 1, final: null, raw: new Blob(['rusak']) }));
+  await enqueue(item({ kode: 'AAAA-0002', capturedAt: 2, final: null, raw: new Blob(['png']) }));
+  const sent = mockFetch();
+  expect(await processQueue({ render: true })).toMatchObject({ sent: 0, left: 2 });
+  expect(sent).toHaveLength(0);
+  const q = await listQueue();
+  expect(q.map((i) => [i.kode, i.final, i.error])).toEqual([
+    ['AAAA-0001', null, 'Gagal membuat watermark'], ['AAAA-0002', null, 'Gagal membuat watermark'],
+  ]);
+});
+
+test('processQueue: alamat dipotong 300 karakter', async () => {
+  await enqueue(item({ address: 'x'.repeat(400) }));
+  const sent = mockFetch();
+  await processQueue({ render: false });
+  expect(sent[0].meta.address).toBe('x'.repeat(300));
+});
+
+test('processQueue: dipanggil saat sedang berjalan → item baru ikut terkirim di janji yang sama', async () => {
+  await enqueue(item({ kode: 'AAAA-0001', capturedAt: 1 }));
+  const sent: string[] = [];
+  let p2: Promise<unknown> | undefined;
+  vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+    sent.push(JSON.parse(decodeURIComponent((init!.headers as Record<string, string>)['X-Foto-Meta'])).kode);
+    if (!p2) {
+      await enqueue(item({ kode: 'AAAA-0002', capturedAt: 2 }));
+      p2 = processQueue({ render: false });
+    }
+    return Response.json({ result: 'dipakai' });
+  }));
+  const r = await processQueue({ render: false });
+  expect(sent).toEqual(['AAAA-0001', 'AAAA-0002']);
+  expect(r).toMatchObject({ sent: 2, left: 0 });
+  expect(await p2).toEqual(r);
 });

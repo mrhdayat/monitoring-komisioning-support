@@ -27,8 +27,7 @@ export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext
   if (!len || !/^\d+$/.test(len)) return err('invalid', 411);
   if (Number(len) > MAX_BYTES) return err('invalid', 400);
   const m = parseMeta(req.headers.get('X-Foto-Meta'));
-  // Jepretan tidak mungkin lebih akhir dari jam HP saat kirim (+1 menit); cegah capturedAt palsu yang selalu menang §8a.
-  if (!m || m.capturedAt > m.deviceNow + 60_000) return err('invalid', 400);
+  if (!m) return err('invalid', 400);
   const buf = await req.arrayBuffer();
   const b = new Uint8Array(buf, 0, Math.min(3, buf.byteLength));
   if (buf.byteLength > MAX_BYTES || b[0] !== 0xff || b[1] !== 0xd8 || b[2] !== 0xff) return err('invalid', 400);
@@ -49,9 +48,12 @@ export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext
 
   // 4. Koreksi jam & expired.
   const offset = now - m.deviceNow;
-  const t = m.capturedAt + offset;
+  // Jepret "di masa depan" (capturedAt > deviceNow + 1 menit) tetap diterima (foto tidak boleh hilang), ditandai ⚠ jam,
+  // dan t_koreksi dijepit ke now supaya tidak bisa mengalahkan foto yang benar-benar dijepret lebih akhir §8a.
+  const future = m.capturedAt > m.deviceNow + 60_000;
+  const t = Math.min(m.capturedAt + offset, now);
   if (t > expiryEndMs(unit.berlaku_akhir)) return err('lewat_expired', 422);
-  const flags = [clockOff(offset) && 'jam', (m.lat === null || m.lon === null) && 'gps'].filter(Boolean).join(',');
+  const flags = [(clockOff(offset) || future) && 'jam', (m.lat === null || m.lon === null) && 'gps'].filter(Boolean).join(',');
 
   // 5. Simpan berkas.
   const key = `foto/${m.kode}.jpg`;

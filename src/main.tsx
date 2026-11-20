@@ -9,3 +9,5 @@ if (import.meta.env.PROD) navigator.serviceWorker?.register('/sw.js').catch(() =
 const kirim = () => { processQueue({ render: true }).catch(() => {}); };
 kirim();
 addEventListener('online', kirim);
+// iOS tidak punya Background Sync: kirim juga saat app kembali ke depan.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kirim(); });
