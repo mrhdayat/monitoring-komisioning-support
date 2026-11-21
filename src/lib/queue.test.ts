@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest';
-import { clear, get } from 'idb-keyval';
+import { clear, get, set } from 'idb-keyval';
 import { decide, enqueue, listQueue, processQueue, queueStore, type QueueItem } from './queue';
 import { setMekanik } from './mekanik';
 
@@ -174,4 +174,36 @@ test('processQueue: dipanggil saat sedang berjalan → item baru ikut terkirim d
   expect(sent).toEqual(['AAAA-0001', 'AAAA-0002']);
   expect(r).toMatchObject({ sent: 2, left: 0 });
   expect(await p2).toEqual(r);
+});
+
+test('processQueue: item "held" (400) tidak dikirim ulang di putaran berikutnya; held dicabut → terkirim', async () => {
+  await enqueue(item());
+  const sent = mockFetch([400, { error: 'invalid' }]);
+  await processQueue({ render: false });
+  expect(sent).toHaveLength(1);
+  expect((await listQueue())[0].held).toBe(true);
+  expect(await processQueue({ render: false })).toEqual({ sent: 0, left: 1, notices: [] });
+  expect(sent).toHaveLength(1);
+  await set('AAAA-0001', { ...(await listQueue())[0], held: false, error: undefined }, queueStore);
+  expect(await processQueue({ render: false })).toMatchObject({ sent: 1, left: 0 });
+  expect(sent).toHaveLength(2);
+});
+
+test('processQueue: alamat 300 unit UTF-16 tidak memotong pasangan surrogat', async () => {
+  await enqueue(item({ address: 'x'.repeat(299) + '😀😀' }));
+  const sent = mockFetch();
+  await processQueue({ render: false });
+  expect(sent[0].meta.address).toBe('x'.repeat(299));
+});
+
+test('processQueue: render gagal menyiarkan perubahan', async () => {
+  await enqueue(item({ final: null, raw: new Blob(['rusak']) }));
+  mockFetch();
+  const bc = new BroadcastChannel('antrean');
+  let n = 0;
+  bc.onmessage = () => n++;
+  await processQueue({ render: true });
+  await new Promise((r) => setTimeout(r, 20));
+  bc.close();
+  expect(n).toBe(1);
 });

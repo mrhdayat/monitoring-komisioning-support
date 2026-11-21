@@ -2,11 +2,11 @@ import { lazy, Suspense } from 'react';
 import { navigate, useRoute } from './router';
 import { useQueueCount } from './lib/useQueueCount';
 import UnitList from './screens/UnitList';
+import Antrean from './screens/Antrean';
 
 // Kamera di-load terpisah: daftar unit tetap ringan saat dibuka pertama.
 const Camera = lazy(() => import('./screens/Camera'));
 // Placeholder: diganti layar sungguhan di Task 14–19.
-const Antrean = () => <main className="screen"><h1 className="large-title">Antrean</h1></main>;
 const CekKode = () => <main className="screen"><h1 className="large-title">Cek Kode Foto</h1></main>;
 const AdminApp = lazy(async () => ({ default: () => <main className="screen"><h1 className="large-title">Admin</h1></main> }));
 

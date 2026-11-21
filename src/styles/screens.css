@@ -170,3 +170,20 @@
   .done summary .row-chev { transition: none; }
   .cam-shutter:not(:disabled):active i { transform: none; opacity: 0.6; }
 }
+
+/* Antrean */
+.q-send { margin-top: 16px; }
+.q-note { margin-top: 12px; font-size: 14px; line-height: 1.4; color: var(--label-2); }
+.q-info { margin-top: 12px; padding: 12px 14px; border-radius: var(--r-list); background: var(--orange-bg); color: var(--orange-ink); font-size: 14px; font-weight: 500; line-height: 1.4; }
+.q-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; }
+.q-thumb { flex: none; width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: var(--fill); }
+.q-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.q-status { font-size: 14px; color: var(--label-2); }
+.q-bad { color: var(--orange-ink); font-weight: 500; }
+.q-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.q-act { min-height: 44px; padding: 0 14px; border-radius: 22px; background: var(--fill); font-size: 14px; font-weight: 600; color: var(--label); }
+.q-act:disabled { opacity: 0.5; }
+.q-danger { background: var(--orange-bg); color: var(--orange-ink); }
+.q-del { background: var(--orange-ink); }
+.q-hist { padding: 12px 14px; font-size: 14px; line-height: 1.4; }
+.grp .btn-plain { justify-content: flex-start; padding: 0 16px; width: auto; font-size: 15px; }

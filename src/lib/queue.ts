@@ -11,6 +11,7 @@ export interface QueueItem {
   kode: string; unitId: number; noLambung: string; sisi: Sisi;
   capturedAt: number; lat: number | null; lon: number | null; accuracy: number | null; address: string | null;
   raw: Blob; final: Blob | null; error?: string;
+  held?: boolean; // ditolak server (400): tidak dikirim ulang sampai mekanik memilih "Coba kirim lagi"
 }
 type Hasil = { sent: number; left: number; notices: string[] };
 
@@ -40,6 +41,11 @@ export async function removeItem(kode: string): Promise<void> {
   changed();
 }
 
+export async function unhold(kode: string): Promise<void> {
+  await update<QueueItem | undefined>(kode, (it) => it && { ...it, held: false, error: undefined }, queueStore);
+  changed();
+}
+
 export function decide(status: number, _body: unknown): 'hapus' | 'ulang' | 'kode_baru' | 'tolak' | 'tahan' {
   if (status === 200) return 'hapus';
   if (status === 409) return 'kode_baru';
@@ -50,6 +56,12 @@ export function decide(status: number, _body: unknown): 'hapus' | 'ulang' | 'kod
 
 const ALASAN: Record<string, string> = { lewat_expired: 'lewat tanggal expired', unit_tidak_berlaku: 'unit tidak berlaku' };
 
+// Batas server 300 unit UTF-16; jangan tinggalkan setengah pasangan surrogat di ujung.
+export function capAddress(s: string): string {
+  const c = s.slice(0, 300);
+  return /[\uD800-\uDBFF]$/.test(c) ? c.slice(0, -1) : c;
+}
+
 async function run(render: boolean): Promise<Hasil> {
   const m = await getMekanik();
   const items = await listQueue();
@@ -58,11 +70,12 @@ async function run(render: boolean): Promise<Hasil> {
   if (!m || navigator.onLine === false) return { sent, left: items.length, notices };
 
   for (let it of items) { // items bisa bertambah saat kode_baru
-    it = { ...it, address: it.address?.slice(0, 300) ?? null }; // batas server
+    if (it.held) continue;
+    it = { ...it, address: it.address ? capAddress(it.address) : null }; // batas server
     if (!it.final) {
       if (!render) continue; // service worker: render ditinggal untuk halaman
       let address = it.address;
-      if (address === null && it.lat !== null && it.lon !== null) address = (await fetchAddress(it.lat, it.lon))?.slice(0, 300) ?? null;
+      if (address === null && it.lat !== null && it.lon !== null) { const a = await fetchAddress(it.lat, it.lon); address = a ? capAddress(a) : null; }
       try {
         const wm = await import('./watermark');
         await wm.loadWatermarkFont();
@@ -71,6 +84,7 @@ async function run(render: boolean): Promise<Hasil> {
         it = { ...it, address, final };
       } catch {
         await set(it.kode, { ...it, error: 'Gagal membuat watermark' }, queueStore);
+        changed();
         continue;
       }
       await set(it.kode, it, queueStore);
@@ -94,10 +108,10 @@ async function run(render: boolean): Promise<Hasil> {
       await queueStore('readwrite', (s) => { s.put(next, next.kode); s.delete(old); return promisifyRequest(s.transaction); });
       items.push(next);
     } else if (d === 'tahan') {
-      await set(it.kode, { ...it, error: 'Data foto ditolak server, hubungi admin' }, queueStore);
+      await set(it.kode, { ...it, held: true, error: 'Data foto ditolak server, hubungi admin' }, queueStore);
     } else {
       await set(it.kode, { ...it, error: r.status ? `Server bermasalah (${r.status})` : 'Menunggu sinyal' }, queueStore);
-      if (!r.status) break; // offline: sisa antrean pasti gagal juga
+      if (!r.status) { changed(); break; } // offline: sisa antrean pasti gagal juga
     }
     changed();
   }

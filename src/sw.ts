@@ -20,6 +20,6 @@ self.addEventListener('sync', (e) => {
   if (e.tag !== 'antrean') return;
   // Gagal → browser menjadwalkan ulang sync. Item tanpa final menunggu halaman dibuka.
   e.waitUntil(processQueue({ render: false }).then(listQueue).then((q) => {
-    if (q.some((i) => i.final)) throw new Error('masih ada foto siap kirim');
+    if (q.some((i) => i.final && !i.held)) throw new Error('masih ada foto siap kirim');
   }));
 });
