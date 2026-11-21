@@ -39,7 +39,7 @@
 .row:active { background: var(--fill); }
 .row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .row-id { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-.row-period { padding: 2px 8px; border-radius: 999px; background: var(--fill); font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--label-2); }
+.row-period { padding: 2px 8px; border-radius: 999px; background: var(--fill); font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--label); }
 .row-sub { font-size: 14px; color: var(--label-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-r { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .row-exp { font-size: 12px; font-weight: 500; color: var(--label-2); }

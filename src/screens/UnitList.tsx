@@ -18,6 +18,13 @@ const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'O
 // berlaku_akhir sudah tanggal WITA (YYYY-MM-DD): jangan lewat Date supaya zona HP tidak berpengaruh.
 export const fmtExp = (d: string) => `Exp ${d.slice(8, 10)} ${BULAN[+d.slice(5, 7) - 1]}`;
 
+// No lambung yang muncul di dua periode atau lebih: hanya baris ini yang diberi label periode.
+export function duplicates(units: { no_lambung: string; period_id: number }[]): Set<string> {
+  const per = new Map<string, Set<number>>();
+  for (const u of units) per.set(u.no_lambung, (per.get(u.no_lambung) ?? new Set()).add(u.period_id));
+  return new Set([...per].filter(([, ids]) => ids.size > 1).map(([no]) => no));
+}
+
 const jam = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 const byWeek = (a: string, b: string) => a.localeCompare(b, 'id', { numeric: true });
@@ -27,7 +34,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   return <button type="button" className="chip" aria-pressed={on} onClick={onClick}>{children}</button>;
 }
 
-function Groups({ units, labels, onPick }: { units: SnapUnit[]; labels: Map<number, string> | null; onPick: (u: SnapUnit) => void }) {
+function Groups({ units, dup, labels, onPick }: { units: SnapUnit[]; dup: Set<string>; labels: Map<number, string>; onPick: (u: SnapUnit) => void }) {
   const groups = new Map<string, SnapUnit[]>();
   for (const u of [...units].sort(byExp)) groups.set(u.week, [...(groups.get(u.week) ?? []), u]);
   return [...groups].sort(([a], [b]) => byWeek(a, b)).map(([week, list]) => (
@@ -41,7 +48,7 @@ function Groups({ units, labels, onPick }: { units: SnapUnit[]; labels: Map<numb
               <span className="row-main">
                 <span className="row-id">
                   {u.no_lambung}
-                  {labels && <span className="row-period">{labels.get(u.period_id)}</span>}
+                  {dup.has(u.no_lambung) && <span className="row-period">{labels.get(u.period_id)}</span>}
                 </span>
                 <span className="row-sub">{u.jenis_unit} · {u.perusahaan}</span>
               </span>
@@ -76,11 +83,9 @@ export default function UnitList() {
       if (s === 'aktif') aktif.push(u); else if (s === 'selesai') selesai.push(u);
     }
     const all = [...aktif, ...selesai];
-    const seen = new Map<string, number>(), dup = new Set<string>();
-    for (const u of all) { if (seen.has(u.no_lambung) && seen.get(u.no_lambung) !== u.period_id) dup.add(u.no_lambung); seen.set(u.no_lambung, u.period_id); }
     const pIds = new Set(all.map((u) => u.period_id));
     return {
-      aktif, selesai, dup,
+      aktif, selesai, dup: duplicates(all),
       weeks: [...new Set(all.map((u) => u.week))].sort(byWeek),
       periods: data.periods.filter((p) => pIds.has(p.id)),
       labels: new Map(data.periods.map((p) => [p.id, p.label])),
@@ -96,15 +101,13 @@ export default function UnitList() {
     (!week || u.week === week) && (period === null || u.period_id === period) && (!nq || norm(u.no_lambung).includes(nq));
   const aktif = view?.aktif.filter(keep) ?? [];
   const selesai = view?.selesai.filter(keep) ?? [];
-  // Satu label per baris yang bentrok antar periode (no lambung sama di dua periode).
-  const dupOnly = (list: SnapUnit[]) => (view && list.some((u) => view.dup.has(u.no_lambung)) ? view.labels : null);
 
   // Pil berubah di atas layar: beri ruang supaya judul tidak tertutup.
   const pill = stale ? 'offline' : queue > 0 ? 'warning' : null;
 
   return (
     <main className={`screen${pill ? ' has-pill' : ''}`}>
-      {stale && <Pill tone="offline">{updatedAt ? `Offline · daftar diperbarui ${jam.format(updatedAt)}` : 'Offline'}</Pill>}
+      {stale && <Pill tone="offline">{updatedAt ? `Offline · daftar terakhir diperbarui ${jam.format(updatedAt)}` : 'Offline'}</Pill>}
       {!stale && queue > 0 && <Pill tone="warning">{queue} foto belum terkirim</Pill>}
 
       <h1 className="large-title">Komisioning</h1>
@@ -144,7 +147,7 @@ export default function UnitList() {
           ) : aktif.length === 0 && selesai.length === 0 ? (
             <p className="empty">Tidak ada unit yang cocok.</p>
           ) : (
-            <Groups units={aktif} labels={dupOnly(aktif)} onPick={onPick} />
+            <Groups units={aktif} dup={view.dup} labels={view.labels} onPick={onPick} />
           )}
 
           {view.selesai.length > 0 && (
@@ -153,7 +156,7 @@ export default function UnitList() {
                 Selesai ({selesai.length})
                 <svg className="row-chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1 1l6 6-6 6" /></svg>
               </summary>
-              <Groups units={selesai} labels={dupOnly(selesai)} onPick={onPick} />
+              <Groups units={selesai} dup={view.dup} labels={view.labels} onPick={onPick} />
             </details>
           )}
         </>
