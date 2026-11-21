@@ -187,3 +187,31 @@
 .q-del { background: var(--orange-ink); }
 .q-hist { padding: 12px 14px; font-size: 14px; line-height: 1.4; }
 .grp .btn-plain { justify-content: flex-start; padding: 0 16px; width: auto; font-size: 15px; }
+
+/* Kolom Cek Kode Foto (landing + layar Cek) */
+.l-cek { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.l-input {
+  flex: 1; min-width: 0; height: 48px; padding: 0 14px; border: 0; border-radius: 12px;
+  background: var(--fill-search); color: var(--label); font-size: 17px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; -webkit-appearance: none; appearance: none;
+}
+.l-input::placeholder { color: var(--label-2); font-weight: 500; }
+.l-input:focus-visible { outline-offset: 0; }
+.l-input[aria-invalid="true"] { box-shadow: 0 0 0 2px var(--orange); }
+.l-btn { min-height: 48px; padding: 0 22px; border-radius: 24px; background: var(--ink); color: #fff; font-size: 17px; font-weight: 600; }
+.l-err { flex-basis: 100%; font-size: 14px; font-weight: 500; color: var(--orange-ink); }
+
+/* Layar Cek Kode Foto */
+.cek { max-width: 640px; margin-inline: auto; }
+.cek-back { display: inline-flex; align-items: center; min-height: 44px; font-size: 17px; font-weight: 600; color: var(--ink); text-decoration: none; }
+.cek .l-cek { margin-bottom: 16px; }
+.cek-msg { margin-top: 24px; font-size: 17px; line-height: 1.4; color: var(--label-2); text-wrap: balance; }
+.cek-card { background: var(--surface); border-radius: var(--r-card); overflow: hidden; }
+.cek-card a { display: block; background: var(--fill); }
+.cek-card img { display: block; width: 100%; height: auto; min-height: 160px; }
+.cek-card dl { margin: 0; padding: 4px 16px 8px; }
+.cek-card dl div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 0.5px solid var(--separator); }
+.cek-card dl div:first-child { border-top: 0; }
+.cek-card dt { font-size: 14px; color: var(--label-2); }
+.cek-card dd { margin: 0; font-size: 15px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.cap { text-transform: capitalize; }

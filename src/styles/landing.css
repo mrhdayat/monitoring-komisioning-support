@@ -1,0 +1,56 @@
+/* Landing laptop/TV. Semua ukuran dalam em: 1440 px ≈ 15 px, 1920 px ≈ 20 px (terbaca dari jauh). */
+.land { font-size: clamp(15px, 1.04vw, 24px); min-height: 100dvh; padding: 1.6em 2em 2em; max-width: 120em; margin-inline: auto; }
+.l-head { display: flex; align-items: center; justify-content: space-between; gap: 1em; }
+.l-title { font-size: 2.2em; font-weight: 800; line-height: 1.1; letter-spacing: -0.025em; }
+.l-live { display: flex; align-items: center; gap: 0.6em; font-size: 1em; font-weight: 500; color: var(--label-2); font-variant-numeric: tabular-nums; }
+.l-live i { width: 0.6em; height: 0.6em; border-radius: 50%; background: var(--neon-dot); }
+.l-live.off i { background: var(--orange); }
+
+.l-grid { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 1em; margin-top: 1.4em; align-items: start; }
+.l-col { display: flex; flex-direction: column; gap: 1em; min-width: 0; }
+.l-hero {
+  position: relative; overflow: hidden; min-height: 15em;
+  background: var(--ink); color: #fff; border-radius: var(--r-card); padding: 1.5em 1.5em 2em;
+}
+.l-k { font-size: 1em; font-weight: 600; color: var(--neon); }
+.l-n { margin-top: 0.4em; font-size: 7em; font-weight: 800; line-height: 1; letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.l-n small { font-size: 0.25em; font-weight: 600; letter-spacing: 0; color: var(--on-ink-2); }
+.l-c { margin-top: 0.8em; font-size: 1.1em; line-height: 1.4; color: #d1d1d6; }
+.l-c b { color: var(--orange-on-ink); font-weight: 600; }
+.l-strip { position: absolute; inset: auto 0 0; height: 0.5em; background: #3a3a3c; }
+.l-strip i { display: block; height: 100%; background: var(--neon); transform-origin: left; transition: transform 600ms var(--ease-out); }
+
+.l-tile { background: var(--surface); border-radius: var(--r-card); padding: 1.1em 1.2em 1.2em; min-width: 0; }
+.l-h { font-size: 0.95em; font-weight: 600; color: var(--label-2); }
+.l-empty { margin-top: 0.8em; color: var(--label-2); }
+.l-tile ul { list-style: none; margin: 0.6em 0 0; padding: 0; }
+.l-tile li + li { border-top: 0.5px solid var(--separator); }
+.l-u { font-weight: 700; }
+.l-s { color: var(--label-2); font-size: 0.93em; text-transform: capitalize; }
+.l-tm, .l-d { color: var(--label-2); font-size: 0.93em; font-variant-numeric: tabular-nums; }
+
+.l-weeks li { display: grid; grid-template-columns: 4.5em 1fr 3.4em; gap: 0.7em; align-items: center; padding: 0.45em 0; border: 0 !important; font-size: 0.93em; }
+.l-bar { height: 0.8em; border-radius: 0.4em; background: var(--fill); overflow: hidden; }
+.l-bar i { display: block; height: 100%; background: var(--neon-dot); border-radius: inherit; transform-origin: left; transition: transform 600ms var(--ease-out); }
+.l-weeks .full .l-bar i { background: var(--neon); box-shadow: inset 0 0 0 1px var(--neon-dot); }
+.l-nm { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.l-feed li { display: flex; align-items: center; gap: 0.8em; padding: 0.5em 0; }
+.l-feed img { flex: none; width: 2.6em; height: 3.4em; border-radius: 0.5em; object-fit: cover; background: var(--fill); }
+.l-feed .l-tm { margin-left: auto; }
+.l-feed li.new { animation: l-in 450ms var(--ease-out); }
+@keyframes l-in { from { opacity: 0; transform: translateY(-0.6em); } }
+
+.l-urg li { display: grid; grid-template-columns: auto 1fr auto auto; gap: 0.8em; align-items: center; padding: 0.6em 0; }
+.l-urg .l-s { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.l-urg .l-d { padding: 0.3em 0.7em; border-radius: 999px; background: var(--orange-bg); color: var(--orange-ink); font-weight: 600; font-size: 0.85em; }
+
+.land .l-input { height: 3em; font-size: 1em; }
+.land .l-btn { min-height: 3em; font-size: 1em; }
+
+@media (max-width: 1279px) { .l-grid { grid-template-columns: 1fr 1fr; } .l-col:first-child { grid-column: span 2; } }
+@media (prefers-reduced-motion: reduce) {
+  .l-feed li.new { animation: l-fade 300ms linear; }
+  @keyframes l-fade { from { opacity: 0; } }
+  .l-strip i, .l-bar i { transition: none; }
+}

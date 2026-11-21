@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useSyncExternalStore } from 'react';
 import { navigate, useRoute } from './router';
 import { useQueueCount } from './lib/useQueueCount';
 import UnitList from './screens/UnitList';
@@ -6,8 +6,8 @@ import Antrean from './screens/Antrean';
 
 // Kamera di-load terpisah: daftar unit tetap ringan saat dibuka pertama.
 const Camera = lazy(() => import('./screens/Camera'));
-// Placeholder: diganti layar sungguhan di Task 14–19.
-const CekKode = () => <main className="screen"><h1 className="large-title">Cek Kode Foto</h1></main>;
+const Landing = lazy(() => import('./screens/Landing'));
+const CekKode = lazy(() => import('./screens/CekKode'));
 const AdminApp = lazy(async () => ({ default: () => <main className="screen"><h1 className="large-title">Admin</h1></main> }));
 
 const TABS = [
@@ -30,22 +30,27 @@ function TabBar({ at }: { at: string }) {
   );
 }
 
+const mq = matchMedia('(min-width: 1024px)');
+const subWide = (cb: () => void) => { mq.addEventListener('change', cb); return () => mq.removeEventListener('change', cb); };
+
 export default function App() {
   const { route } = useRoute();
+  const wide = useSyncExternalStore(subWide, () => mq.matches);
+  const landing = wide && route === '/';
   return (
     <>
-      <Screen route={route} />
-      {(route === '/' || route === '/antrean') && <TabBar at={route} />}
+      <Screen route={route} landing={landing} />
+      {!landing && (route === '/' || route === '/antrean') && <TabBar at={route} />}
     </>
   );
 }
 
-function Screen({ route }: { route: string | null }) {
+function Screen({ route, landing }: { route: string | null; landing: boolean }) {
   switch (route) {
     case '/unit/:id/kamera': return <Suspense fallback={<main className="cam" />}><Camera /></Suspense>;
     case '/antrean': return <Antrean />;
-    case '/cek': case '/cek/:kode': return <CekKode />;
+    case '/cek': case '/cek/:kode': return <Suspense><CekKode /></Suspense>;
     case '/admin/login': case '/admin/:tab?': return <Suspense><AdminApp /></Suspense>;
-    default: return <UnitList />;
+    default: return landing ? <Suspense><Landing /></Suspense> : <UnitList />;
   }
 }
