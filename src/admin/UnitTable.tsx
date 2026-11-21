@@ -36,14 +36,41 @@ function Chip({ u }: { u: AdminUnit }) {
   );
 }
 
+const SISI_LABEL = { depan: 'Depan', belakang: 'Belakang', kanan: 'Kanan', kiri: 'Kiri' } as const;
+const SISI_SHORT = { depan: 'D', belakang: 'B', kanan: 'Ka', kiri: 'Ki' } as const;
+
+// Satu IntersectionObserver untuk semua thumbnail: src baru dipasang saat slot mendekati layar.
+// ponytail: foto asli 1600 px di-decode ke slot 26x34; ganti dengan thumbnail yang dibuat saat jepret bila beban terasa.
+const seen = new WeakMap<Element, () => void>();
+let io: IntersectionObserver | undefined;
+function observe(el: Element, cb: () => void) {
+  io ??= new IntersectionObserver((es) => {
+    for (const e of es) if (e.isIntersecting) { seen.get(e.target)?.(); seen.delete(e.target); io!.unobserve(e.target); }
+  }, { rootMargin: '200px' });
+  seen.set(el, cb);
+  io.observe(el);
+  return () => { seen.delete(el); io!.unobserve(el); };
+}
+
+function Thumb({ kode, sisi }: { kode: string; sisi: keyof typeof SISI_LABEL }) {
+  const ref = useRef<HTMLElement>(null);
+  const [near, setNear] = useState(false);
+  const [bad, setBad] = useState(false);
+  useEffect(() => (ref.current ? observe(ref.current, () => setNear(true)) : undefined), []);
+  if (near && !bad) {
+    return <img src={`/api/photo/${encodeURIComponent(kode)}`} alt="" title={`Sisi ${SISI_LABEL[sisi]}`} decoding="async" width="26" height="34" onError={() => setBad(true)} />;
+  }
+  return <i ref={ref} className="ut-empty" title={bad ? 'Foto tidak ditemukan' : `Sisi ${SISI_LABEL[sisi]}`}>{SISI_SHORT[sisi]}</i>;
+}
+
 function Thumbs({ u, purged }: { u: AdminUnit; purged: boolean }) {
   return (
     <span className="ut-thumbs">
       {SISI.map((s) => {
         const p = u.photos[s];
         return p && !purged
-          ? <img key={s} src={`/api/photo/${encodeURIComponent(p.kode)}`} alt="" title={`Sisi ${s}`} loading="lazy" decoding="async" width="26" height="34" />
-          : <i key={s} className="ut-empty" title={`Sisi ${s} belum ada`}>{s[0].toUpperCase()}</i>;
+          ? <Thumb key={s} kode={p.kode} sisi={s} />
+          : <i key={s} className="ut-empty" role="img" aria-label={`Sisi ${SISI_LABEL[s]} belum ada`} title={`Sisi ${SISI_LABEL[s]} belum ada`}>{SISI_SHORT[s]}</i>;
       })}
     </span>
   );

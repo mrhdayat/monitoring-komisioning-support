@@ -46,7 +46,7 @@ export default function UnitDetail({ unit, period, onClose, onChanged }: {
           return (
             <li key={s} className="ud-side">
               {p ? <Photo unit={unit} sisi={s} p={p} onDelete={() => { setMsg(''); setDel(s); }} /> : (
-                <div className="ud-none"><span className="ud-ph" aria-hidden="true">{s[0].toUpperCase()}</span>
+                <div className="ud-none"><span className="ud-ph" aria-hidden="true">{cap(s)}</span>
                   <div><h3>{cap(s)}</h3><p className="ud-dim">{purged ? 'Foto sudah dihapus (retensi).' : 'Belum ada foto.'}</p></div></div>
               )}
             </li>
@@ -65,13 +65,16 @@ export default function UnitDetail({ unit, period, onClose, onChanged }: {
 
 function Photo({ unit, sisi, p, onDelete }: { unit: AdminUnit; sisi: Sisi; p: AdminPhoto; onDelete: () => void }) {
   const src = `/api/photo/${encodeURIComponent(p.kode)}`;
+  const [bad, setBad] = useState(false);
   const jam = p.flags.split(',').includes('jam');
   const gps = p.flags.split(',').includes('gps');
   return (
     <>
-      <a className="ud-photo" href={src} target="_blank" rel="noopener" aria-label={`Buka foto ${sisi} ukuran asli`}>
-        <img src={src} alt={`Foto sisi ${sisi} unit ${unit.no_lambung}`} loading="lazy" decoding="async" width="104" height="138" />
-      </a>
+      {bad ? <div className="ud-photo ud-photo-bad" role="img" aria-label="Foto tidak ditemukan" title="Foto tidak ditemukan">Foto tidak ditemukan</div> : (
+        <a className="ud-photo" href={src} target="_blank" rel="noopener" aria-label={`Buka foto ${sisi} ukuran asli`}>
+          <img src={src} alt={`Foto sisi ${sisi} unit ${unit.no_lambung}`} loading="lazy" decoding="async" width="600" height="800" onError={() => setBad(true)} />
+        </a>
+      )}
       <div className="ud-info">
         <h3>{cap(sisi)} <code>{p.kode}</code></h3>
         <p>{p.mekanik_nama} · NRP {p.mekanik_nrp}</p>

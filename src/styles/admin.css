@@ -95,7 +95,7 @@
 .c-co { overflow-wrap: anywhere; }
 .ut-thumbs { display: flex; gap: 4px; }
 .ut-thumbs img, .ut-empty { width: 26px; height: 34px; border-radius: 5px; background: var(--fill); object-fit: cover; }
-.ut-empty { display: grid; place-items: center; font-size: 12px; font-style: normal; font-weight: 600; color: var(--label-2); }
+.ut-empty { display: grid; place-items: center; font-size: 12px; font-style: normal; font-weight: 600; color: var(--label); }
 .ut-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .ut-part { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
 .badge-late { background: var(--fill); color: var(--orange-ink); }
@@ -127,11 +127,12 @@
 .ud-btn-del { color: var(--orange-ink); }
 .ud-note { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--fill); font-size: 14px; }
 .ud-list { margin: 14px 0 0; padding: 0; list-style: none; }
-.ud-side { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px; padding: 14px 0; border-top: 0.5px solid var(--fill); }
-.ud-photo { display: block; width: 104px; height: 138px; border-radius: 10px; overflow: hidden; background: var(--fill); }
-.ud-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ud-side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px 0; border-top: 0.5px solid var(--fill); }
+.ud-photo { display: block; width: 100%; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; background: var(--fill); }
+.ud-photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.ud-photo-bad { display: grid; place-items: center; font-size: 14px; font-weight: 600; color: var(--label); }
 .ud-none { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; }
-.ud-ph { display: grid; place-items: center; width: 104px; height: 60px; border-radius: 10px; background: var(--fill); font-weight: 700; color: var(--label-2); }
+.ud-ph { display: grid; place-items: center; width: 104px; height: 60px; border-radius: 10px; background: var(--fill); font-weight: 700; color: var(--label); }
 .ud-info { min-width: 0; font-size: 14px; }
 .ud-info h3, .ud-none h3 { font-size: 16px; font-weight: 700; }
 .ud-info code { margin-left: 6px; font: 600 13px ui-monospace, "SF Mono", monospace; color: var(--label-2); }
