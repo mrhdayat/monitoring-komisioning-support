@@ -8,7 +8,7 @@ import Antrean from './screens/Antrean';
 const Camera = lazy(() => import('./screens/Camera'));
 const Landing = lazy(() => import('./screens/Landing'));
 const CekKode = lazy(() => import('./screens/CekKode'));
-const AdminApp = lazy(async () => ({ default: () => <main className="screen"><h1 className="large-title">Admin</h1></main> }));
+const AdminApp = lazy(() => import('./admin/AdminApp'));
 
 const TABS = [
   { to: '/', label: 'Unit', icon: 'M4 6h16M4 12h16M4 18h16' },
