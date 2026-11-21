@@ -21,7 +21,7 @@
 }
 .adm-go { margin-top: 14px; }
 .adm-go:disabled { opacity: 0.55; cursor: default; }
-.adm-err { min-height: 1.4em; margin-top: 10px; font-size: 13px; font-weight: 500; color: var(--orange-ink); text-align: center; }
+.adm-err { min-height: 1.4em; margin-top: 10px; font-size: 14px; font-weight: 500; color: var(--orange-ink); text-align: center; }
 
 /* Shell */
 .adm-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100dvh; }
@@ -67,6 +67,8 @@
   min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--surface); color: var(--label); font-size: 14px;
 }
 .ut-search { flex: 1 1 200px; }
+/* Safari iOS memperbesar halaman bila kolom < 16 px. */
+@supports (-webkit-touch-callout: none) { .ut-search, .ut-bar select { font-size: 16px; } }
 .ut-search:focus-visible, .ut-bar select:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .ut-seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .ut-seg-b { min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; }
@@ -165,7 +167,6 @@
 .im-drop {
   position: relative; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 22px 20px;
   border: 1.5px dashed var(--separator); border-radius: var(--r-list); background: var(--surface); cursor: pointer;
-  transition: border-color 100ms var(--ease-out), background-color 100ms var(--ease-out);
 }
 .im-drop b { font-size: 17px; font-weight: 700; }
 .im-drop span { font-size: 14px; color: var(--label-2); }
@@ -199,8 +200,10 @@
 .ad-acts .ud-btn:disabled { opacity: 0.4; }
 .ad-hint { flex-basis: 100%; text-align: right; font-size: 12px; color: var(--label-2); }
 .ad-add { margin-top: 28px; max-width: 360px; }
+/* Formulir ada di latar halaman (--bg): kolom harus putih supaya batasnya terlihat. */
+.ad-add .adm-fld { background: var(--surface); }
 .ad-add h2 { margin-bottom: 10px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
-.ad-inv { margin: -4px 0 8px 4px; font-size: 13px; font-weight: 500; color: var(--orange-ink); }
+.ad-inv { margin: -4px 0 8px 4px; font-size: 14px; font-weight: 500; color: var(--orange-ink); }
 .ad-go:disabled { opacity: 0.45; cursor: default; }
 .ad-msg { text-align: left; }
 .ad-ok { min-height: 1.4em; margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--neon-ink); }

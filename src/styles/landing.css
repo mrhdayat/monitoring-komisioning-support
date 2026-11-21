@@ -26,10 +26,10 @@
 .l-tile ul { list-style: none; margin: 0.6em 0 0; padding: 0; }
 .l-tile li + li { border-top: 0.5px solid var(--separator); }
 .l-u { font-weight: 700; }
-.l-s { color: var(--label-2); font-size: 0.93em; text-transform: capitalize; }
-.l-tm, .l-d { color: var(--label-2); font-size: 0.93em; font-variant-numeric: tabular-nums; }
+.l-s { color: var(--label-2); font-size: 0.94em; text-transform: capitalize; }
+.l-tm, .l-d { color: var(--label-2); font-size: 0.94em; font-variant-numeric: tabular-nums; }
 
-.l-weeks li { display: grid; grid-template-columns: 4.5em 1fr 3.4em; gap: 0.7em; align-items: center; padding: 0.45em 0; border: 0 !important; font-size: 0.93em; }
+.l-weeks li { display: grid; grid-template-columns: 4.5em 1fr 3.4em; gap: 0.7em; align-items: center; padding: 0.45em 0; border: 0 !important; font-size: 0.94em; }
 .l-bar { height: 0.8em; border-radius: 0.4em; background: var(--fill); overflow: hidden; }
 .l-bar i { display: block; height: 100%; background: var(--neon-dot); border-radius: inherit; transform-origin: left; transition: transform 600ms var(--ease-out); }
 .l-weeks .full .l-bar i { background: var(--neon); box-shadow: inset 0 0 0 1px var(--neon-dot); }
