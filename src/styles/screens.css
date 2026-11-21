@@ -86,6 +86,87 @@
 .guide-why { font-size: 14px; line-height: 1.4; color: var(--label-2); }
 .guide .btn { margin-top: 10px; }
 
+/* Kamera: latar hitam ala kamera iPhone (§7.2 no. 3) */
+.cam {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  padding: var(--safe-t) 0 var(--safe-b);
+  background: #000; color: #fff;
+}
+.cam-top { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; padding: 4px 10px 2px; }
+.cam-x { display: grid; place-items: center; width: 44px; height: 44px; }
+.cam-x > span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 16px; background: rgba(255, 255, 255, 0.14); }
+.cam-x svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+.cam-unit { min-width: 0; text-align: center; }
+.cam-unit h1 { font-size: 17px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cam-unit p { font-size: 12px; font-weight: 500; color: #aeaeb2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Empat kolom sama lebar: ✓ yang muncul tidak menggeser pil lain. */
+.cam-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; max-width: 420px; margin-inline: auto; padding: 0 12px 4px; }
+.cam-step { padding: 6px 0; min-width: 0; } /* area ketuk 44 px */
+.cam-step > span {
+  display: flex; align-items: center; justify-content: center; gap: 3px; height: 32px; border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12); color: #d1d1d6; font-size: 13px; font-weight: 600; white-space: nowrap;
+  transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+.cam-step[data-done] > span { background: rgba(201, 243, 29, 0.18); color: var(--neon); }
+.cam-step[aria-current="step"] > span { background: var(--neon); color: var(--ink); }
+.cam-check { font-style: normal; transition: opacity 250ms var(--ease-out); @starting-style { opacity: 0; } }
+
+/* Pratinjau 3:4 sebesar mungkin di ruang yang tersisa (SE 375×667 pun muat). */
+.cam-stage { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
+.cam-vf { position: relative; width: min(100cqw, 75cqh); aspect-ratio: 3 / 4; overflow: hidden; background: #111; container-type: inline-size; }
+.cam-vf video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cam-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center; }
+.cam-msg h2 { font-size: 20px; font-weight: 700; }
+.cam-msg p { font-size: 15px; color: #aeaeb2; text-wrap: balance; }
+.cam-msg .btn { width: auto; margin-top: 12px; background: #fff; color: var(--ink); }
+.cam-fly { position: fixed; z-index: 30; object-fit: cover; pointer-events: none; will-change: transform; }
+
+.cam-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 24px 20px; }
+.cam-last { justify-self: start; width: 48px; height: 48px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.3); overflow: hidden; }
+.cam-last:has(img) { border-color: #fff; }
+.cam-last img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cam-shutter { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; border: 4px solid #fff; }
+.cam-shutter i { width: 60px; height: 60px; border-radius: 50%; background: #fff; transition: transform 100ms var(--ease-out), opacity 150ms var(--ease-out); }
+.cam-shutter:not(:disabled):active i { transform: scale(0.9); }
+.cam-shutter:disabled { cursor: default; }
+.cam-shutter:disabled i { opacity: 0.4; }
+.cam-gps { justify-self: end; width: 84px; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: center; color: #aeaeb2; }
+.cam-gps-on { color: var(--neon); font-variant-numeric: tabular-nums; }
+.cam-gps-off { color: var(--orange-on-ink); }
+
+/* Watermark pratinjau: angka = renderWatermarked (fraksi lebar foto). */
+.wm {
+  position: absolute; left: 4cqw; right: 4cqw; bottom: 3cqw; pointer-events: none;
+  font-family: "Inter Variable", sans-serif; color: #fff; line-height: 1.3;
+  text-shadow: 0 0.2cqw 0.8cqw rgba(0, 0, 0, 0.75);
+}
+.wm-label {
+  display: inline-block; margin-bottom: 2.4cqw; padding: 0.55em 0.7em; border-radius: 0.3em;
+  background: var(--yellow); color: var(--ink); font-size: 3.4cqw; font-weight: 600; line-height: 1; text-shadow: none;
+}
+.wm-row { display: flex; align-items: center; gap: 1.5cqw; margin-bottom: 1cqw; }
+.wm-jam { font-size: 11cqw; font-weight: 300; line-height: 1; }
+.wm-bar { flex: none; width: 0.5cqw; height: 8.6cqw; background: var(--yellow); }
+.wm-d { font-size: 3.4cqw; line-height: 1.35; }
+.wm-a { font-size: 3.7cqw; }
+.wm-c { margin-top: 0.6cqw; font-size: 3cqw; opacity: 0.9; }
+
+/* Sheet setelah jepret */
+.cam-sheet-sub { margin-top: 2px; font-size: 15px; color: var(--label-2); }
+.cam-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0 20px; padding: 0; list-style: none; }
+.cam-thumbs li { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; text-align: center; color: var(--label-2); }
+.cam-thumbs li[data-done] { color: var(--label); }
+.cam-tile { display: block; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: var(--fill); }
+.cam-tile:empty { background: transparent; border: 1.5px dashed var(--separator); }
+.cam-tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cam-howto { margin: 0; padding-left: 22px; font-size: 17px; line-height: 1.4; display: flex; flex-direction: column; gap: 6px; }
+
+.cam-refuse h2 { margin-top: 16px; font-size: 20px; font-weight: 700; line-height: 1.25; }
+.cam-refuse p { margin-top: 8px; font-size: 17px; color: var(--label-2); }
+.cam-refuse .btn { margin-top: 28px; }
+
 @media (prefers-reduced-motion: reduce) {
   .done summary .row-chev { transition: none; }
+  .cam-shutter:not(:disabled):active i { transform: none; opacity: 0.6; }
 }

@@ -3,9 +3,11 @@ import { Sheet } from '../ui/Sheet';
 
 const KEY = 'install-guide-dismissed';
 
+export const isIOS = () =>
+  /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 function shouldShow(): boolean {
-  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (!ios || (navigator as { standalone?: boolean }).standalone === true) return false;
+  if (!isIOS() || (navigator as { standalone?: boolean }).standalone === true) return false;
   try { return !localStorage.getItem(KEY); } catch { return true; }
 }
 
