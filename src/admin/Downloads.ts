@@ -4,6 +4,10 @@ import { witaText } from './unitUtils';
 const strip = (s: string) => s.replace(/\s+/g, '');
 export const zipName = (u: AdminUnit, sisi: Sisi) => `${strip(u.no_lambung)}/${strip(u.no_lambung)}_${sisi}.jpg`;
 
+// Lebih dari satu periode: unit yang sama ada di tiap periode, jadi beri folder periode agar jalur tidak bentrok.
+export const zipPath = (u: AdminUnit, sisi: Sisi, multiPeriod: boolean) =>
+  `${multiPeriod ? `${u.period.replace(/[\s/\\]+/g, '-')}/` : ''}${zipName(u, sisi)}`;
+
 const STATUS = { belum: 'Belum', sebagian: 'Sebagian', lengkap: 'Lengkap', lewat_expired: 'Lewat expired' } as const;
 const uniq = (xs: string[]) => [...new Set(xs)].join(', ');
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
@@ -25,7 +29,7 @@ export function rekapRows(units: AdminUnit[]) {
   });
 }
 
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+export const todayWita = (now = Date.now()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(now); // YYYY-MM-DD
 const slug = (s: string) => s.replace(/[\s/\\]+/g, '-');
 export const zipFile = (period?: string, week?: string) => `komisioning-${slug(period ?? 'semua')}${week ? `-${slug(week)}` : ''}.zip`;
 
@@ -35,7 +39,7 @@ export async function downloadRekap(units: AdminUnit[]): Promise<void> {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
   const periods = [...new Set(units.map((u) => u.period))];
-  XLSX.writeFile(wb, `rekap-komisioning-${periods.length === 1 ? slug(periods[0]) : 'semua'}-${today()}.xlsx`);
+  XLSX.writeFile(wb, `rekap-komisioning-${periods.length === 1 ? slug(periods[0]) : 'semua'}-${todayWita()}.xlsx`);
 }
 
 export interface ZipResult { cancelled: boolean; missing: number }
@@ -46,7 +50,8 @@ const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortEr
 export async function downloadZip(
   units: AdminUnit[], onProgress: (done: number, total: number) => void, filename: string, signal?: AbortSignal,
 ): Promise<ZipResult> {
-  const { downloadZip: makeZip } = await import('client-zip');
+  const picker = (window as unknown as { showSaveFilePicker?: Picker }).showSaveFilePicker;
+  const multiPeriod = new Set(units.map((u) => u.period)).size > 1;
   const total = units.reduce((n, u) => n + SISI.filter((s) => u.photos[s]).length, 0);
   let done = 0, missing = 0;
   onProgress(0, total);
@@ -60,16 +65,17 @@ export async function downloadZip(
         const res = await fetch(`/api/photo/${encodeURIComponent(p.kode)}`, { signal });
         if (res.status === 404) missing++;
         else if (!res.ok) throw new Error(`Foto ${p.kode}: HTTP ${res.status}`);
-        else yield { name: zipName(u, s), input: res, lastModified: new Date(p.captured_at_device) };
+        else yield { name: zipPath(u, s, multiPeriod), input: res, lastModified: new Date(p.captured_at_device) };
         onProgress(++done, total);
       }
     }
   }
 
   try {
-    const picker = (window as unknown as { showSaveFilePicker?: Picker }).showSaveFilePicker;
-    if (picker) {
-      const handle = await picker({ suggestedName: filename, types: [{ description: 'Berkas ZIP', accept: { 'application/zip': ['.zip'] } }] });
+    // Pemilih berkas dipanggil lebih dulu: await import() sebelumnya bisa menghabiskan aktivasi pengguna.
+    const handle = picker && await picker({ suggestedName: filename, types: [{ description: 'Berkas ZIP', accept: { 'application/zip': ['.zip'] } }] });
+    const { downloadZip: makeZip } = await import('client-zip');
+    if (handle) {
       await makeZip(entries(units)).body!.pipeTo(await handle.createWritable(), { signal });
     } else {
       // Tanpa pemilih berkas: satu ZIP per periode+week agar tiap berkas tetap kecil di memori.
@@ -81,9 +87,8 @@ export async function downloadZip(
         const blob = await makeZip(entries(list)).blob();
         if (done - missing === before) continue; // semua foto grup ini hilang: jangan unduh ZIP kosong
         const [period, week] = key.split('|');
-        const periods = new Set(units.map((u) => u.period)).size;
         const url = URL.createObjectURL(blob);
-        const a = Object.assign(document.createElement('a'), { href: url, download: `${groups.size > 1 ? `${base}-${periods > 1 ? `${slug(period)}-` : ''}${slug(week)}` : base}.zip` });
+        const a = Object.assign(document.createElement('a'), { href: url, download: `${groups.size > 1 ? `${base}-${multiPeriod ? `${slug(period)}-` : ''}${slug(week)}` : base}.zip` });
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
       }

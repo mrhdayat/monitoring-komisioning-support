@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AdminUnit } from '../../shared/types';
-import { rekapRows, zipName } from './Downloads';
+import { rekapRows, todayWita, zipName, zipPath } from './Downloads';
 
 const u = (o: Partial<AdminUnit>): AdminUnit => ({
   id: 1, period_id: 1, no_lambung: 'DT 4464', perusahaan: 'PT A', kelompok_unit: 'K', jenis_unit: 'Dump Truck', week: 'Week2',
@@ -33,5 +33,22 @@ describe('rekapRows', () => {
     expect(r['NRP']).toBe('1, 2');
     expect(r['Flag']).toBe('⚠ jam, ⚠ gps');
     expect(r['Status']).toBe('Sebagian');
+  });
+});
+
+describe('zipPath', () => {
+  it('satu periode: sama dengan zipName', () => {
+    expect(zipPath(u({}), 'depan', false)).toBe('DT4464/DT4464_depan.jpg');
+  });
+  it('lebih dari satu periode: folder periode di depan, "/" jadi "-"', () => {
+    expect(zipPath(u({ period: 'Des/2026' }), 'depan', true)).toBe('Des-2026/DT4464/DT4464_depan.jpg');
+    expect(zipPath(u({ period: 'Jan/2027' }), 'depan', true)).toBe('Jan-2027/DT4464/DT4464_depan.jpg');
+  });
+});
+
+describe('todayWita', () => {
+  it('memakai tanggal WITA, bukan UTC', () => {
+    expect(todayWita(Date.UTC(2026, 10, 21, 17, 0))).toBe('2026-11-22'); // 01:00 WITA keesokan harinya
+    expect(todayWita(Date.UTC(2026, 10, 21, 15, 59))).toBe('2026-11-21');
   });
 });
