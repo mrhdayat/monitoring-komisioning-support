@@ -35,6 +35,7 @@ export default function AdminApp() {
   const tab = TABS.find((t) => t.id === params.tab)?.id;
   useEffect(() => {
     if (user && route === '/admin/:tab?' && !tab) navigate('/admin/unit', { replace: true });
+    if (user === null && route === '/admin/:tab?') navigate('/admin/login', { replace: true }); // mis. Back setelah keluar
   }, [user, route, tab]);
 
   if (route === '/admin/login') return user === undefined ? null : <Login onLogin={setUser} />;

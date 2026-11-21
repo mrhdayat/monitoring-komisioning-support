@@ -27,7 +27,7 @@ export default function Login({ onLogin }: { onLogin: (username: string) => void
     setPending(true); setError('');
     let msg = '';
     try {
-      const res = await adminFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: f.get('username'), password: f.get('password') }) });
+      const res = await adminFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: String(f.get('username')).trim().toLowerCase(), password: f.get('password') }) });
       if (res.ok) {
         onLogin(((await res.json()) as { username: string }).username);
         navigate('/admin/unit', { replace: true });
@@ -36,7 +36,7 @@ export default function Login({ onLogin }: { onLogin: (username: string) => void
       if (res.status === 423) {
         const { until } = (await res.json()) as { until: number };
         msg = `Terlalu banyak percobaan. Coba lagi pukul ${hm.format(until)}`;
-      } else msg = 'Username atau password salah';
+      } else msg = res.status === 401 ? 'Username atau password salah' : 'Terjadi kesalahan di server. Coba lagi.';
     } catch {
       msg = 'Tidak dapat terhubung. Periksa koneksi lalu coba lagi.';
     }
