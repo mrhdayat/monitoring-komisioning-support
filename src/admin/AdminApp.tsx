@@ -5,6 +5,7 @@ import Login from './Login';
 import Import from './Import';
 import UnitTable from './UnitTable';
 import Unduhan from './Unduhan';
+import Admins from './Admins';
 import '../styles/admin.css';
 
 const TABS = [
@@ -65,8 +66,7 @@ export default function AdminApp() {
         {tab === 'unit' && <UnitTable />}
         {tab === 'upload' && <Import />}
         {tab === 'unduhan' && <Unduhan />}
-        {/* Tab Admin diisi Task 19. */}
-        {tab === 'admin' && <p className="adm-todo">Kelola akun admin: Task 19.</p>}
+        {tab === 'admin' && <Admins me={user} />}
       </main>
     </div>
   );

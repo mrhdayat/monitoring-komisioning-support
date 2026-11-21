@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { navigate } from '../router';
 import { adminFetch } from './api';
+import PasswordField from './PasswordField';
 
 const hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 export default function Login({ onLogin }: { onLogin: (username: string) => void }) {
-  const [show, setShow] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [fails, setFails] = useState(0);
@@ -53,15 +53,7 @@ export default function Login({ onLogin }: { onLogin: (username: string) => void
           <small>Username</small>
           <input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required />
         </label>
-        <div className="adm-fld">
-          <label htmlFor="adm-pw"><small>Password</small></label>
-          <div className="adm-fld-row">
-            <input id="adm-pw" name="password" type={show ? 'text' : 'password'} autoComplete="current-password" required />
-            <button type="button" className="adm-eye press" aria-pressed={show} aria-controls="adm-pw" onClick={() => setShow(!show)}>
-              {show ? 'Sembunyikan' : 'Lihat'}
-            </button>
-          </div>
-        </div>
+        <PasswordField autoComplete="current-password" />
         <button type="submit" className="btn press adm-go" disabled={pending}>{pending ? 'Memeriksa…' : 'Masuk'}</button>
         <p className="adm-err" role="alert">{error}</p>
       </form>
