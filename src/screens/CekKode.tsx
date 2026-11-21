@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { normalizeKode } from '../../shared/kode';
 import { navigate, useRoute } from '../router';
+import { CekForm } from './CekForm';
 
 interface Hasil { kode: string; no_lambung: string; sisi: string; captured_at: number; received_at: number }
 
@@ -11,11 +12,8 @@ export default function CekKode() {
   const { params } = useRoute();
   const raw = params.kode ?? '';
   const kode = raw ? normalizeKode(raw) : null;
-  const [v, setV] = useState(raw);
-  const [err, setErr] = useState(Boolean(raw) && !kode);
   const [res, setRes] = useState<{ kode: string; r: Hasil | 'none' | 'fail' } | null>(null);
 
-  useEffect(() => { setV(raw); setErr(Boolean(raw) && !normalizeKode(raw)); }, [raw]);
   useEffect(() => {
     if (!kode) return;
     const ac = new AbortController();
@@ -31,17 +29,7 @@ export default function CekKode() {
     <main className="screen cek">
       <a href="/" className="cek-back" onClick={(e) => { e.preventDefault(); navigate('/'); }}>‹ Kembali</a>
       <h1 className="large-title">Cek Kode Foto</h1>
-      <form className="l-cek" onSubmit={(e) => {
-        e.preventDefault();
-        const k = normalizeKode(v);
-        if (k) navigate(`/cek/${k}`, { replace: true }); else setErr(true);
-      }}>
-        <input className="l-input" value={v} onChange={(e) => { setV(e.target.value); setErr(false); }}
-          placeholder="AB1C-D2EF" aria-label="Kode Foto" autoCapitalize="characters" autoComplete="off" spellCheck={false}
-          aria-invalid={err} aria-describedby={err ? 'cek-err' : undefined} />
-        <button type="submit" className="l-btn press">Cek</button>
-        {err && <p id="cek-err" className="l-err" role="alert">Kode Foto harus 8 karakter, contoh AB1C-D2EF</p>}
-      </form>
+      <CekForm key={raw} initial={raw} replace />
 
       {kode && !cur && <p className="cek-msg" role="status">Memeriksa…</p>}
       {cur === 'none' && <p className="cek-msg" role="status">Kode Foto tidak ditemukan. Foto mungkin sudah diganti atau dihapus.</p>}

@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { landingSummary } from '../../shared/rules';
-import { normalizeKode } from '../../shared/kode';
 import { useSnapshot } from '../lib/snapshot';
-import { navigate } from '../router';
 import { Count } from '../ui/Count';
 import { SideDots } from '../ui/SideDots';
+import { CekForm } from './CekForm';
 import { fmtExp } from './UnitList';
 import '../styles/landing.css';
 
@@ -17,28 +16,12 @@ function useNow() {
   return now;
 }
 
-function CekForm() {
-  const [v, setV] = useState('');
-  const [err, setErr] = useState(false);
-  return (
-    <form className="l-cek" onSubmit={(e) => {
-      e.preventDefault();
-      const k = normalizeKode(v);
-      if (k) navigate(`/cek/${k}`); else setErr(true);
-    }}>
-      <input className="l-input" value={v} onChange={(e) => { setV(e.target.value); setErr(false); }}
-        placeholder="AB1C-D2EF" aria-label="Kode Foto" autoCapitalize="characters" autoComplete="off" spellCheck={false}
-        aria-invalid={err} aria-describedby={err ? 'cek-err' : undefined} />
-      <button type="submit" className="l-btn press">Cek</button>
-      {err && <p id="cek-err" className="l-err" role="alert">Kode Foto harus 8 karakter, contoh AB1C-D2EF</p>}
-    </form>
-  );
-}
-
 export default function Landing() {
   const { data, stale, updatedAt } = useSnapshot();
   const now = useNow();
-  const sum = useMemo(() => (data ? landingSummary(data, now) : null), [data, now]);
+  // Kedaluwarsa hanya berubah per menit; tiap detik hanya label "n detik lalu" yang berubah.
+  const minute = Math.floor(now / 60_000);
+  const sum = useMemo(() => (data ? landingSummary(data, minute * 60_000) : null), [data, minute]);
   const seen = useRef<Set<string> | null>(null);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
 

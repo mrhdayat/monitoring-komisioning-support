@@ -45,7 +45,7 @@
 .l-urg .l-s { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .l-urg .l-d { padding: 0.3em 0.7em; border-radius: 999px; background: var(--orange-bg); color: var(--orange-ink); font-weight: 600; font-size: 0.85em; }
 
-.land .l-input { height: 3em; font-size: 1em; }
+.land .l-input { height: 3em; font-size: max(1em, 16px); }
 .land .l-btn { min-height: 3em; font-size: 1em; }
 
 @media (max-width: 1279px) { .l-grid { grid-template-columns: 1fr 1fr; } .l-col:first-child { grid-column: span 2; } }
