@@ -11,6 +11,18 @@ export interface SnapUnit {
   status_she: string; in_latest_upload: boolean;
   sides: Partial<Record<Sisi, { kode: string; at: number }>>; // at = captured_at_device
 }
+export interface AdminPhoto {
+  kode: string; captured_at_device: number; received_at_server: number;
+  clock_offset_s: number;           // detik; positif = jam HP tertinggal dari server
+  mekanik_nama: string; mekanik_nrp: string;
+  flags: string;                    // '' | 'jam' | 'gps' | 'jam,gps'
+  address: string | null; lat: number | null; lon: number | null;
+}
+export interface AdminUnit extends SnapUnit {
+  period: string; status: AdminStatus; perluCek: boolean;
+  photos: Partial<Record<Sisi, AdminPhoto>>;
+}
+export interface AdminPeriod { id: number; label: string; purge_after: number; purged_at: number | null }
 export interface Snapshot {
   version: number;                  // ms saat dibangun
   periods: { id: number; label: string; purge_after: number }[];
