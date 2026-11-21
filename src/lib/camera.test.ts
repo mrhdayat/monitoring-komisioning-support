@@ -1,6 +1,15 @@
 import { expect, test } from 'vitest';
 import type { Sisi } from '../../shared/types';
-import { cropRect, nextSide } from './camera';
+import { cropRect, nextSide, shutterReason } from './camera';
+
+test('shutterReason: jepret ditahan selama GPS mencari (≤ 15 detik), boleh setelah fix atau gagal', () => {
+  const fix = { lat: -3.4, lon: 115.6, accuracy: 6 };
+  expect(shutterReason('live', false, 'mencari')).toBe('Menunggu lokasi…');
+  expect(shutterReason('live', false, fix)).toBeNull();
+  expect(shutterReason('live', false, 'tidak')).toBeNull();
+  expect(shutterReason('mulai', false, fix)).toBe('Kamera belum siap');
+  expect(shutterReason('live', true, fix)).toBe('Menyimpan foto…');
+});
 
 test('cropRect: potong tengah 3:4 potret, sisi panjang ≤ 1600', () => {
   expect(cropRect(1920, 1080)).toEqual({ sx: 555, sy: 0, sw: 810, sh: 1080, w: 810, h: 1080 });

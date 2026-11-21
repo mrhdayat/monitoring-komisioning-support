@@ -1,4 +1,5 @@
 import { SISI, type Sisi } from '../../shared/types';
+import type { GpsStatus } from './geo';
 
 const MAX_SISI = 1600;
 
@@ -38,5 +39,13 @@ export function nextSide(done: (s: Sisi) => boolean, from?: Sisi): Sisi | null {
     const s = SISI[(i + k) % 4];
     if (!done(s)) return s;
   }
+  return null;
+}
+
+// Alasan tombol jepret ditahan, atau null. "Lokasi tidak tersedia" hanya boleh tercetak setelah ±15 detik tanpa fix atau izin ditolak (§8).
+export function shutterReason(cam: string, busy: boolean, gps: GpsStatus): string | null {
+  if (cam !== 'live') return 'Kamera belum siap';
+  if (busy) return 'Menyimpan foto…';
+  if (gps === 'mencari') return 'Menunggu lokasi…';
   return null;
 }

@@ -3,10 +3,10 @@ import { animate, useReducedMotion } from 'motion/react';
 import { newKode } from '../../shared/kode';
 import { isExpired } from '../../shared/rules';
 import { SISI, type Sisi, type SnapUnit } from '../../shared/types';
-import { grabFrame, nextSide, openCamera } from '../lib/camera';
+import { grabFrame, nextSide, openCamera, shutterReason } from '../lib/camera';
 import { fetchAddress, watchGps, type GpsStatus } from '../lib/geo';
 import { getMekanik } from '../lib/mekanik';
-import { enqueue, listQueue, processQueue } from '../lib/queue';
+import { capAddress, enqueue, listQueue, processQueue } from '../lib/queue';
 import { useSnapshot } from '../lib/snapshot';
 import { loadWatermarkFont, renderWatermarked, watermarkText, type WatermarkText } from '../lib/watermark';
 import { navigate, useRoute } from '../router';
@@ -113,7 +113,7 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
     const f = gps.current?.get();
     if (!hasFix || !f || !navigator.onLine) return;
     let live = true;
-    fetchAddress(f.lat, f.lon).then((a) => { if (live && a) setAddress(a.slice(0, 300)); });
+    fetchAddress(f.lat, f.lon).then((a) => { if (live && a) setAddress(capAddress(a)); });
     return () => { live = false; };
   }, [hasFix]);
 
@@ -181,11 +181,14 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
     }
   }
 
+  const reason = shutterReason(cam, busy, gpsStatus);
+
   async function shoot() {
-    if (busy || cam !== 'live') return;
+    if (reason) return;
     setBusy(true);
     setError(null);
     const target = sisi;
+    let url: string;
     try {
       const capturedAt = Date.now();
       const rawP = grabFrame(video.current!); // frame diambil seketika (drawImage sinkron)
@@ -197,7 +200,7 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
       let address: string | null = null;
       let final: Blob | null = null;
       if (navigator.onLine) {
-        if (fix) address = (await fetchAddress(fix.lat, fix.lon))?.slice(0, 300) ?? null;
+        if (fix) { const a = await fetchAddress(fix.lat, fix.lon); address = a ? capAddress(a) : null; }
         // Ada GPS tapi alamat gagal (sinyal lemah): biarkan antrean merender nanti, setelah alamat didapat (§8).
         if (address || !fix) {
           try {
@@ -208,26 +211,28 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
       }
       // Sheet "tersimpan" baru boleh muncul setelah foto benar-benar tertulis di IndexedDB.
       await enqueue({ kode, unitId: unit.id, noLambung: unit.no_lambung, sisi: target, capturedAt, lat, lon, accuracy: fix?.accuracy ?? null, address, raw, final });
-      navigator.vibrate?.(30);
-      const url = objUrl(final ?? raw);
-      setPick(target);
-      await fly(url, target);
-      setLocal((p) => ({ ...p, [target]: url }));
-      setLast(url);
-      setSaved(target);
-      setSheet(true);
-      processQueue({ render: true }).catch(() => {});
+      url = objUrl(final ?? raw);
     } catch {
       setError('Foto gagal disimpan. Coba jepret lagi.');
-    } finally {
       setBusy(false);
+      return;
     }
+    // Foto sudah aman di IndexedDB: dari sini tidak ada yang boleh dilaporkan sebagai "gagal disimpan".
+    navigator.vibrate?.(30);
+    setPick(target);
+    await fly(url, target).catch(() => {});
+    setLocal((p) => ({ ...p, [target]: url }));
+    setLast(url);
+    setSaved(target);
+    setSheet(true);
+    setBusy(false);
+    processQueue({ render: true }).catch(() => {});
   }
 
   const next = saved ? nextSide(done, saved) : null;
   const closeSheet = (to: Sisi | null) => { setPick(to ?? saved); setSheet(false); };
   const wm = watermarkText({ capturedAt: now, sisi, lat: hasFix ? gpsStatus.lat : null, lon: hasFix ? gpsStatus.lon : null, address, kode: '····-····' });
-  if (gpsStatus === 'mencari') wm.alamat = ['Mencari lokasi…'];
+  if (gpsStatus === 'mencari') wm.alamat = ['Menunggu lokasi…'];
 
   return (
     <main ref={root} className="cam">
@@ -285,8 +290,9 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
         <span className="cam-last">{last && <img src={last} alt="Foto terakhir" />}</span>
         <button
           type="button" className="cam-shutter" onClick={shoot}
-          disabled={cam !== 'live' || busy} aria-busy={busy || undefined}
-          aria-label={`Jepret foto sisi ${LABEL[sisi]}`}
+          aria-disabled={reason ? true : undefined} aria-busy={busy || undefined}
+          aria-label={`Jepret foto sisi ${LABEL[sisi]}`} aria-describedby="cam-gps"
+          title={reason ?? undefined}
         ><i /></button>
         <Gps s={gpsStatus} />
       </div>
@@ -356,7 +362,8 @@ function Watermark({ t }: { t: WatermarkText }) {
 }
 
 function Gps({ s }: { s: GpsStatus }) {
-  if (s === 'mencari') return <span className="cam-gps">Mencari lokasi…</span>;
-  if (s === 'tidak') return <span className="cam-gps cam-gps-off">Lokasi tidak tersedia</span>;
-  return <span className="cam-gps cam-gps-on">GPS<br />± {s.accuracy} m</span>;
+  // id dipakai aria-describedby tombol jepret: pembaca layar ikut tahu kenapa tombol ditahan.
+  if (s === 'mencari') return <span id="cam-gps" className="cam-gps">Menunggu lokasi…</span>;
+  if (s === 'tidak') return <span id="cam-gps" className="cam-gps cam-gps-off">Lokasi tidak tersedia</span>;
+  return <span id="cam-gps" className="cam-gps cam-gps-on">GPS<br />± {s.accuracy} m</span>;
 }
