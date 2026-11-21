@@ -3,6 +3,8 @@ import { SISI, type AdminPeriod, type AdminUnit } from '../../shared/types';
 import { navigate } from '../router';
 import { Pill } from '../ui/Pill';
 import { adminFetch } from './api';
+import DownloadButtons from './DownloadButtons';
+import { zipFile } from './Downloads';
 import UnitDetail from './UnitDetail';
 import { filterUnits, hiddenFromMechanic, retentionBanners, waText, type Filters, type StatusFilter } from './unitUtils';
 
@@ -126,6 +128,7 @@ export default function UnitTable() {
           <span className="ut-count">{rows.length} unit</span>
           <button type="button" className="ut-copy press" disabled={todo.length === 0} onClick={copy}>Salin daftar untuk WA ({todo.length})</button>
         </div>
+        <DownloadButtons units={rows} filename={zipFile(data.periods.find((p) => p.id === f.periodId)?.label, f.week)} />
         {copyErr && <p className="ut-err" role="alert">{copyErr}</p>}
         {copied && <Pill tone="info">Disalin</Pill>}
 

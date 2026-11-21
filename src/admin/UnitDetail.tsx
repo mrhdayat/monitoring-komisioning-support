@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { SISI, type AdminPeriod, type AdminPhoto, type AdminUnit, type Sisi } from '../../shared/types';
 import { Sheet } from '../ui/Sheet';
 import { adminFetch } from './api';
+import DownloadButtons from './DownloadButtons';
 import { clockOffsetText, witaText } from './unitUtils';
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
-// Panel detail satu unit: 4 foto, siapa yang memotret, jam HP vs server, alamat, hapus per foto, unduh per foto.
+// Panel detail satu unit: 4 foto, siapa yang memotret, jam HP vs server, alamat, hapus per foto, unduh ZIP unit ini.
 export default function UnitDetail({ unit, period, onClose, onChanged }: {
   unit: AdminUnit; period?: AdminPeriod; onClose: () => void; onChanged: () => void;
 }) {
@@ -38,6 +39,7 @@ export default function UnitDetail({ unit, period, onClose, onChanged }: {
         <button type="button" className="ud-close press" onClick={onClose}>Tutup</button>
       </header>
       {purged && <p className="ud-note">Foto sudah dihapus (retensi).</p>}
+      {!purged && <DownloadButtons units={[unit]} rekap={false} zipLabel="Unduh ZIP unit ini" filename={`${unit.no_lambung.replace(/\s+/g, '')}.zip`} />}
       <ul className="ud-list">
         {SISI.map((s) => {
           const p = unit.photos[s];
@@ -81,7 +83,6 @@ function Photo({ unit, sisi, p, onDelete }: { unit: AdminUnit; sisi: Sisi; p: Ad
         {gps && <p className="ud-warn">⚠ Lokasi GPS tidak tersedia saat foto diambil</p>}
         <p className="ud-addr">{p.address ?? (gps ? '' : 'Alamat tidak tersedia')}</p>
         <div className="ud-acts">
-          <a className="ud-btn press" href={src} download={`${unit.no_lambung.replace(/\s+/g, '_')}_${sisi}_${p.kode}.jpg`}>Unduh</a>
           <button type="button" className="ud-btn ud-btn-del press" onClick={onDelete}>Hapus foto</button>
         </div>
       </div>

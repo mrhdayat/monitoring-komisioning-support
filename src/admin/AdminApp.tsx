@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { navigate, useRoute } from '../router';
 import { adminFetch } from './api';
 import Login from './Login';
+import Import from './Import';
 import UnitTable from './UnitTable';
+import Unduhan from './Unduhan';
 import '../styles/admin.css';
 
 const TABS = [
@@ -61,12 +63,10 @@ export default function AdminApp() {
       <main className="adm-main">
         <h1 className="large-title">{TABS.find((t) => t.id === tab)!.label}</h1>
         {tab === 'unit' && <UnitTable />}
-        {/* Tab lain diisi Task 18–19. */}
-        <p className="adm-todo" hidden={tab === 'unit'}>
-          {tab === 'upload' && 'Upload dan pratinjau Excel SHE: Task 18.'}
-          {tab === 'unduhan' && 'Unduh foto per unit atau per periode: Task 18.'}
-          {tab === 'admin' && 'Kelola akun admin: Task 19.'}
-        </p>
+        {tab === 'upload' && <Import />}
+        {tab === 'unduhan' && <Unduhan />}
+        {/* Tab Admin diisi Task 19. */}
+        {tab === 'admin' && <p className="adm-todo">Kelola akun admin: Task 19.</p>}
       </main>
     </div>
   );
