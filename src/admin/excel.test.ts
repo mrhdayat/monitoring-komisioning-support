@@ -1,17 +1,19 @@
+/// <reference types="node" />
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import * as XLSX from 'xlsx';
 import { parseBerlakuAkhir, parseSheRows, rowsFromSheet } from './excel';
 
 const H = ['No', 'No Lambung', 'Perusahaan', 'Kelompok Unit', 'Jenis Unit', 'Komisioner', 'Berlaku Akhir', 'Week', 'Periode', 'Status'];
 const row = (n: string, d = '01-Jan-2027', per = 'Des/2026') =>
-  [1, n, 'PPA', 'TRANSPORT', 'TRUCK SUPPORT', '-', d, 'Week 1', per, 'Belum Diajukan'];
+  [1, n, 'PPA', 'SUPPORT', 'TRUCK SUPPORT', '-', d, 'Week 1', per, 'Belum Diajukan'];
 
 describe('excel SHE', () => {
   test('memetakan kolom & tanggal', () => {
     const { byPeriod, errors } = parseSheRows([H, row('TG 2028')]);
     expect(errors).toEqual([]);
     expect(byPeriod.get('Des/2026')![0]).toEqual({
-      no_lambung: 'TG 2028', perusahaan: 'PPA', kelompok_unit: 'TRANSPORT', jenis_unit: 'TRUCK SUPPORT',
+      no_lambung: 'TG 2028', perusahaan: 'PPA', kelompok_unit: 'SUPPORT', jenis_unit: 'TRUCK SUPPORT',
       berlaku_akhir: '2027-01-01', week: 'Week 1', status_she: 'Belum Diajukan',
     });
   });
@@ -51,4 +53,19 @@ describe('excel SHE', () => {
     const ws = XLSX.utils.sheet_add_aoa(XLSX.utils.aoa_to_sheet([]), rows, { origin: 'A2' });
     expect(parseSheRows(rowsFromSheet(ws)).errors).toEqual(['Baris 6: tanggal Berlaku Akhir tidak valid ("31-Feb-2027")']);
   });
+});
+
+test('baris non-support dibuang tanpa error, dihitung', () => {
+  const r = (n: string, per: string, kel: string) => [1, n, per, kel, 'GENSET', '-', '01-Jan-2027', 'Week 1', 'Des/2026', 'Belum Diajukan'];
+  const blank = [2, 'DT 1', 'PPA', 'WHEEL', '', '', '', '', '', ''];
+  const { byPeriod, errors, totalRows, supportRows } = parseSheRows([H, r('GS 1', 'PPA', 'NON UNIT'), r('DT 2', 'PPA', 'WHEEL'), blank, r('FR 0001', '-', 'SUPPORT')]);
+  expect(errors).toEqual([]);
+  expect(byPeriod.get('Des/2026')!.map((u) => u.no_lambung)).toEqual(['GS 1', 'FR 0001']);
+  expect([totalRows, supportRows]).toEqual([4, 2]);
+});
+const SAMPLE = 'Deadline_Pengajuan_Komisioning_20261120_234805.xlsx';
+test.skipIf(!existsSync(SAMPLE))('file contoh → 84 unit support dari 399 baris', () => {
+  const ws = XLSX.read(readFileSync(SAMPLE)); // sheet pertama
+  const { supportRows, totalRows } = parseSheRows(rowsFromSheet(ws.Sheets[ws.SheetNames[0]]));
+  expect([supportRows, totalRows]).toEqual([84, 399]);
 });

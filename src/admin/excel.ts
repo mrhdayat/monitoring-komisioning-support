@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { MONTHS, purgeAfterMs } from '../../shared/rules';
+import { isSupportUnit, MONTHS, purgeAfterMs } from '../../shared/rules';
 import type { ImportUnit } from '../../shared/types';
 
 const clean = (v: unknown) => String(v ?? '').trim().replace(/\s+/g, ' ');
@@ -28,19 +28,22 @@ const LABEL: Record<string, string> = {
   berlaku_akhir: 'Berlaku Akhir', week: 'Week', periode: 'Periode', status_she: 'Status',
 };
 
-export function parseSheRows(rows: unknown[][]): { byPeriod: Map<string, ImportUnit[]>; errors: string[] } {
+interface Parsed { byPeriod: Map<string, ImportUnit[]>; errors: string[]; totalRows: number; supportRows: number }
+
+export function parseSheRows(rows: unknown[][]): Parsed {
   const byPeriod = new Map<string, ImportUnit[]>();
   const errors: string[] = [];
+  let totalRows = 0, supportRows = 0;
   const norm = (c: unknown) => clean(c).toLowerCase();
   const h = rows.findIndex((r) => r.some((c) => norm(c) === 'no lambung'));
-  if (h < 0) return { byPeriod, errors: ['Kolom No Lambung tidak ditemukan'] };
+  if (h < 0) return { byPeriod, errors: ['Kolom No Lambung tidak ditemukan'], totalRows, supportRows };
   const head = rows[h].map(norm);
   const idx = {} as Record<keyof typeof COLS, number>;
   for (const k of Object.keys(COLS) as (keyof typeof COLS)[]) {
     idx[k] = head.indexOf(COLS[k]);
     if (idx[k] < 0) errors.push(`Kolom ${LABEL[k]} tidak ditemukan`);
   }
-  if (errors.length) return { byPeriod, errors };
+  if (errors.length) return { byPeriod, errors, totalRows, supportRows };
 
   for (let i = h + 1; i < rows.length; i++) {
     const r = rows[i] ?? [];
@@ -48,6 +51,9 @@ export function parseSheRows(rows: unknown[][]): { byPeriod: Map<string, ImportU
     const n = i + 1;
     const v = {} as Record<keyof typeof COLS, string>;
     for (const k of Object.keys(COLS) as (keyof typeof COLS)[]) v[k] = clean(r[idx[k]]);
+    totalRows++;
+    if (!isSupportUnit(v)) continue;
+    supportRows++;
     const empty = (Object.keys(COLS) as (keyof typeof COLS)[]).find((k) => !v[k]);
     if (empty) { errors.push(`Baris ${n}: ${LABEL[empty]} kosong`); continue; }
     const berlaku = parseBerlakuAkhir(v.berlaku_akhir);
@@ -58,7 +64,7 @@ export function parseSheRows(rows: unknown[][]): { byPeriod: Map<string, ImportU
     list.push({ ...rest, berlaku_akhir: berlaku });
     byPeriod.set(periode, list);
   }
-  return { byPeriod, errors };
+  return { byPeriod, errors, totalRows, supportRows };
 }
 
 // range: 0 mulai dari baris 1 Excel meski !ref mulai lebih bawah; baris kosong dipertahankan agar indeks+1 = nomor baris Excel

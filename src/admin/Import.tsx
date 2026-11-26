@@ -3,7 +3,7 @@ import type { AdminUnit, ImportUnit } from '../../shared/types';
 import { adminFetch } from './api';
 
 interface Group { label: string; units: ImportUnit[]; byStatus: [string, number][]; willHide: number | null }
-interface Preview { name: string; groups: Group[]; errors: string[] }
+interface Preview { name: string; groups: Group[]; errors: string[]; totalRows: number; supportRows: number }
 interface Done { label: string; total: number; hidden: number }
 
 const nf = new Intl.NumberFormat('id-ID');
@@ -30,7 +30,7 @@ export default function Import() {
     setErr(''); setDone(null); setPrev(null); setReading(true);
     try {
       const { readSheFile } = await import('./excel');
-      const { byPeriod, errors } = await readSheFile(file);
+      const { byPeriod, errors, totalRows, supportRows } = await readSheFile(file);
       // Bandingkan dengan data sekarang: unit yang masih tampil tetapi tidak ada di berkas akan disembunyikan.
       let existing: AdminUnit[] | null = null;
       try {
@@ -46,8 +46,12 @@ export default function Import() {
           willHide: existing && existing.filter((u) => u.period === label && u.in_latest_upload && !inFile.has(u.no_lambung)).length,
         };
       });
-      if (groups.length === 0 && errors.length === 0) errors.push('Berkas tidak berisi unit.');
-      setPrev({ name: file.name, groups, errors });
+      if (groups.length === 0 && errors.length === 0) {
+        errors.push(totalRows > 0 && supportRows === 0
+          ? 'File ini tidak berisi unit section support (Kelompok NON UNIT/SUPPORT, perusahaan PPA/AMM).'
+          : 'Berkas tidak berisi unit.');
+      }
+      setPrev({ name: file.name, groups, errors, totalRows, supportRows });
     } catch { setErr('Berkas tidak bisa dibaca. Pastikan formatnya .xlsx atau .xls.'); }
     setReading(false);
     if (input.current) input.current.value = '';
@@ -94,6 +98,7 @@ export default function Import() {
       {prev && (
         <div className="im-prev">
           <h2 className="im-h">{prev.name}</h2>
+          <p>{nf.format(prev.supportRows)} unit support dari {nf.format(prev.totalRows)} baris</p>
           {prev.groups.map((g) => (
             <dl key={g.label} className="im-card">
               <div className="im-per"><dt>Periode</dt><dd>{g.label}</dd></div>

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { adminStatus, classifyForMechanic, clockOff, expiryEndMs, landingSummary, purgeAfterMs } from './rules';
+import { adminStatus, classifyForMechanic, clockOff, expiryEndMs, isSupportUnit, landingSummary, purgeAfterMs } from './rules';
 import type { Snapshot, SnapUnit } from './types';
 
 const WITA = (iso: string) => Date.parse(iso + '+08:00');
@@ -55,4 +55,17 @@ test('landingSummary', () => {
   expect([r.total, r.lengkap, r.belum]).toEqual([2, 1, 1]);
   expect(r.urgent[0].id).toBe(2);
   expect(r.perWeek).toEqual([{ week: 'W1', total: 2, lengkap: 1 }]);
+});
+
+test('isSupportUnit', () => {
+  const u = (no_lambung: string, perusahaan: string, kelompok_unit: string) => ({ no_lambung, perusahaan, kelompok_unit });
+  expect(isSupportUnit(u('GS 0012', 'PPA', 'NON UNIT'))).toBe(true);
+  expect(isSupportUnit(u('THDS 0009', 'PPA', 'SUPPORT'))).toBe(true);
+  expect(isSupportUnit(u('LT 0003', 'AMM', 'SUPPORT'))).toBe(true);
+  expect(isSupportUnit(u('THDS 0007', 'TU', 'SUPPORT'))).toBe(true);
+  expect(isSupportUnit(u('FR 0001', '-', 'SUPPORT'))).toBe(true);
+  expect(isSupportUnit(u(' thds  0007 ', 'TU', 'SUPPORT'))).toBe(true);
+  expect(isSupportUnit(u('GS 1', ' ppa ', 'Non  Unit'))).toBe(true);
+  expect(isSupportUnit(u('DT 4464', 'PPA', 'WHEEL'))).toBe(false);
+  expect(isSupportUnit(u('GS 9', 'BTN', 'NON UNIT'))).toBe(false);
 });

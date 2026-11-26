@@ -1,4 +1,4 @@
-import type { AdminStatus, Section, Snapshot, SnapUnit } from './types';
+import type { AdminStatus, ImportUnit, Section, Snapshot, SnapUnit } from './types';
 
 const WITA_MS = 8 * 3600_000; // Asia/Makassar tetap UTC+8, tanpa DST
 
@@ -18,6 +18,14 @@ export function purgeAfterMs(periodLabel: string): number {
   if (!m || !month) throw new Error(`Label periode tidak valid: ${periodLabel}`);
   // awal bulan ke-(month+2) WITA dikurangi 1 ms = akhir bulan berikutnya
   return Date.UTC(+m[2], month + 1, 1) - WITA_MS - 1;
+}
+
+export const SUPPORT_PENGECUALIAN: readonly string[] = ['THDS 0007', 'FR 0001'];
+
+const up = (s: string) => s.trim().toUpperCase().replace(/\s+/g, ' ');
+export function isSupportUnit(u: Pick<ImportUnit, 'no_lambung' | 'perusahaan' | 'kelompok_unit'>): boolean {
+  if (SUPPORT_PENGECUALIAN.includes(up(u.no_lambung))) return true;
+  return ['NON UNIT', 'SUPPORT'].includes(up(u.kelompok_unit)) && ['PPA', 'AMM'].includes(up(u.perusahaan));
 }
 
 export const CLOCK_TOLERANCE_MS = 300_000;
