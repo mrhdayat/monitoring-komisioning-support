@@ -1,32 +1,48 @@
-/* §7.1 "iOS Native + Hi-Vis". Nilai warna dari Global Constraints; jangan menambah warna di luar daftar ini. */
+/* §7 "Papan Lapangan". Nilai dari Global Constraints dan DESIGN.md; jangan menambah warna di luar daftar ini. */
 :root {
-  --bg: #f2f2f7;
-  --surface: #fff;
-  --ink: #111; /* kartu progres, tombol utama */
-  --label: #000;
-  --label-2: #6c6c70; /* teks sekunder: 4,6:1 di --bg, 5,1:1 di putih */
-  --on-ink-2: #a1a1a6; /* teks sekunder di atas --ink */
-  --fill: #e5e5ea;
-  --fill-search: rgba(118, 118, 128, 0.12);
-  --separator: #c6c6c8;
-  --neon: #c9f31d; /* selalu teks gelap di atasnya */
-  --neon-bg: #eefbc4;
-  --neon-ink: #3b4d00;
-  --neon-dot: #9bc20a;
-  --orange: #ff5a1f;
-  --orange-bg: #ffe8de;
-  --orange-ink: #b33a00;
-  --orange-on-ink: #ff7a45; /* "belum" di atas --ink */
-  --yellow: #f5b800; /* watermark */
+  color-scheme: light dark;
 
-  --font: -apple-system, "SF Pro Text", "Inter Variable", system-ui, sans-serif;
+  --bg: #edebe4; /* abu hangat papan */
+  --surface: #fbfaf6; /* sheet, tabel, kartu; juga teks di atas tombol --ink */
+  --text: #141414; /* 15,4:1 di --bg */
+  --ink: #141414; /* garis 2 px, tepi kuat, tombol utama */
+  --head: #141414; /* header, tab bar, sidebar: selalu gelap */
+  --on-head: #fff;
+  --on-head-mut: #b8b5aa; /* 9,0:1 di --head */
+  --on-neon: #141414; /* teks di atas neon/kuning, kedua mode */
+  --mut: #55534c; /* 6,5:1 di --bg, 7,4:1 di --surface */
+  --rule: #d9d6cc;
+  --neon: #c9f31d; /* lengkap, tab aktif */
+  --or: #ff5a1f; /* belum: tepi/titik */
+  --or-ink: #b33a00; /* teks oranye: 5,0:1 di --bg */
+  --yel: #f5b800; /* sebagian, jepret, watermark */
+  --yel-bg: #ffe9a6;
+  /* --head, bukan --ink: di mode gelap --ink terang dan pita harus tetap kuning-hitam. */
+  --hazard: repeating-linear-gradient(-45deg, var(--yel) 0 10px, var(--head) 10px 20px);
 
-  --r-list: 14px;
-  --r-card: 20px;
-  --r-sheet: 32px;
+  --font: "Inter Variable", system-ui, sans-serif;
+  --font-cond: "Barlow Condensed", "Barlow Condensed Narrow", "Barlow Condensed Arial", sans-serif;
+
+  --r-sticker: 5px;
+  --r-btn: 4px;
+  --r-sheet: 12px;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+/* Shift malam: palet gelap dipilih, bukan dibalik. Neon/kuning/oranye tetap. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150f;
+    --surface: #1f1e18;
+    --text: #edebe4; /* 15,3:1 di --bg */
+    --ink: #edebe4;
+    --head: #0b0b08;
+    --mut: #a8a496; /* 7,3:1 di --bg, 6,7:1 di --surface */
+    --rule: #34332b;
+    --or-ink: #ff7a45; /* #B33A00 hanya 2,8:1 di gelap; ini 6,5:1 di --surface */
+  }
 }

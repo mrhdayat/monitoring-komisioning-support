@@ -26,7 +26,7 @@ export default defineConfig({
       },
       manifest: {
         name: 'Komisioning', short_name: 'Komisioning', display: 'standalone', lang: 'id',
-        theme_color: '#F2F2F7', background_color: '#F2F2F7',
+        theme_color: '#EDEBE4', background_color: '#EDEBE4',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },

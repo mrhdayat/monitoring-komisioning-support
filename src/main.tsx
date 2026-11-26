@@ -1,4 +1,6 @@
 import { createRoot } from 'react-dom/client';
+import '@fontsource/barlow-condensed/latin-700.css';
+import '@fontsource/barlow-condensed/latin-800.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/screens.css';

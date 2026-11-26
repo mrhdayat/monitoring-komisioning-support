@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 
-const TONE = { offline: 'glass-dark pill-offline', warning: 'pill-warning', info: 'glass pill-info' };
-
-export function Pill({ tone, children }: { tone: keyof typeof TONE; children: ReactNode }) {
-  return <div role="status" className={`pill ${TONE[tone]}`}>{children}</div>;
+// Pita pesan hitam di atas layar (offline, error, sukses); warna kotak kecil menandai jenisnya.
+export function Pill({ tone, children }: { tone: 'offline' | 'warning' | 'info'; children: ReactNode }) {
+  return <div role="status" className={`banner banner-${tone}`}>{children}</div>;
 }

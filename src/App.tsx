@@ -15,11 +15,11 @@ const TABS = [
   { to: '/antrean', label: 'Antrean', icon: 'M4 14l2.5-8h11L20 14M4 14v5h16v-5M4 14h4.5a3.5 3.5 0 0 0 7 0H20' },
 ] as const;
 
-// Tab bar kaca hanya di layar mekanik utama; kamera, cek, dan admin layar penuh.
+// Tab bar hanya di layar mekanik utama; kamera, cek, dan admin layar penuh.
 function TabBar({ at }: { at: string }) {
   const n = useQueueCount();
   return (
-    <nav className="tabbar glass" aria-label="Menu utama">
+    <nav className="tabbar" aria-label="Menu utama">
       {TABS.map((t) => (
         <button key={t.to} type="button" className="tab press" aria-current={at === t.to ? 'page' : undefined} onClick={() => at !== t.to && navigate(t.to)}>
           <span className="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d={t.icon} /></svg></span>
