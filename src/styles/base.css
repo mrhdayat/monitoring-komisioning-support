@@ -103,22 +103,6 @@ input, textarea, select { font: inherit; font-size: 17px; }
 .banner-warning { --dot: var(--or); }
 .banner-info { --dot: var(--neon); }
 
-/* Kartu progres hitam + strip reflektif */
-.progress {
-  position: relative; overflow: hidden;
-  background: var(--head); color: var(--on-head); border-radius: var(--r-sticker);
-  padding: 16px 16px 21px;
-}
-.progress-num { font-family: var(--font-cond); font-size: 48px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
-.progress-num small { font-family: var(--font); font-size: 15px; font-weight: 600; color: var(--on-head-mut); }
-.progress-sub { margin-top: 6px; font-size: 14px; font-weight: 500; color: var(--on-head-mut); }
-.progress-sub b { color: var(--or); font-weight: 600; }
-.progress-strip { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: #3a3a3c; }
-.progress-strip i {
-  display: block; height: 100%; background: var(--neon);
-  transform-origin: left; transition: transform 600ms var(--ease-out);
-}
-
 /* Angka bergulir: tiap digit satu kolom 0–9 yang digeser. */
 .count { display: inline-flex; font-variant-numeric: tabular-nums; }
 /* Jendela 1,2em (margin −0,1em agar tinggi baris tak berubah); tepi dipudarkan supaya digit yang lewat tidak terpotong kasar. */
@@ -165,7 +149,7 @@ input, textarea, select { font: inherit; font-size: 17px; }
    :root menaikkan spesifisitas di atas kelas tunggal yang memakai box-shadow sebagai tepi (.chip, .btn-2). */
 :root :focus-visible { outline: 3px solid var(--neon); outline-offset: 0; box-shadow: 0 0 0 5px var(--ink); }
 /* Di dalam wadah yang memotong (content-visibility, overflow): cincin yang sama digambar ke dalam. */
-:root :is(.row, .ut-row):focus-visible, :root .cek-card a:focus-visible { outline-offset: -5px; box-shadow: inset 0 0 0 2px var(--ink); }
+:root .ut-row:focus-visible, :root .cek-card a:focus-visible { outline-offset: -5px; box-shadow: inset 0 0 0 2px var(--ink); }
 
 /* Global: gerak diganti pergantian langsung. Tekanan tetap memberi umpan balik lewat opacity. */
 @media (prefers-reduced-motion: reduce) {

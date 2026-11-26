@@ -12,6 +12,10 @@ export const searchKey = (s: string): string =>
 export const jenisKey = (s: string): string => s.trim().toUpperCase().replace(/\s+/g, ' ');
 export const sidesDone = (u: SnapUnit): number => Object.keys(u.sides).length;
 
+const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+// berlaku_akhir sudah tanggal WITA (YYYY-MM-DD): jangan lewat Date supaya zona HP tidak berpengaruh.
+export const fmtTanggal = (d: string): string => `${+d.slice(8, 10)} ${BULAN[+d.slice(5, 7) - 1]} ${d.slice(0, 4)}`;
+
 const num = (a: string, b: string) => a.localeCompare(b, 'id', { numeric: true });
 
 export function boardView(s: Snapshot, f: BoardFilter, now: number): BoardView {

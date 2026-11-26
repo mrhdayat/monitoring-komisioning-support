@@ -6,6 +6,7 @@ import { SISI, type Sisi, type SnapUnit } from '../../shared/types';
 import { grabFrame, nextSide, openCamera, shutterReason } from '../lib/camera';
 import { fetchAddress, watchGps, type GpsStatus } from '../lib/geo';
 import { getMekanik } from '../lib/mekanik';
+import { fmtTanggal } from '../lib/board';
 import { capAddress, enqueue, listQueue, processQueue } from '../lib/queue';
 import { useSnapshot } from '../lib/snapshot';
 import { loadWatermarkFont, renderWatermarked, watermarkText, type WatermarkText } from '../lib/watermark';
@@ -13,7 +14,6 @@ import { navigate, useRoute } from '../router';
 import { Pill } from '../ui/Pill';
 import { Sheet } from '../ui/Sheet';
 import { isIOS } from './InstallGuide';
-import { fmtExp } from './UnitList';
 
 const LABEL: Record<Sisi, string> = { depan: 'Depan', belakang: 'Belakang', kanan: 'Kanan', kiri: 'Kiri' };
 const leave = () => navigate('/', { replace: true });
@@ -24,7 +24,7 @@ export default function Camera() {
   const unit = data?.units.find((u) => u.id === Number(params.id));
   const q = query.get('sisi') as Sisi | null;
 
-  // UnitList meminta nama + NRP sebelum ke sini; tautan langsung tanpa itu dikembalikan.
+  // Sheet Unit di papan meminta nama + NRP sebelum ke sini; tautan langsung tanpa itu dikembalikan.
   useEffect(() => { getMekanik().then((m) => { if (!m) leave(); }); }, []);
 
   if (!data) return <main className="cam" />; // snapshot masih dibaca dari cache
@@ -34,7 +34,7 @@ export default function Camera() {
       <Refusal
         title={unit.no_lambung}
         lead="Unit ini sudah lewat tanggal expired"
-        body={`Berlaku sampai ${fmtExp(unit.berlaku_akhir).slice(4)} ${unit.berlaku_akhir.slice(0, 4)}. Foto tidak bisa diambil lagi.`}
+        body={`Berlaku sampai ${fmtTanggal(unit.berlaku_akhir)}. Foto tidak bisa diambil lagi.`}
       />
     );
   }

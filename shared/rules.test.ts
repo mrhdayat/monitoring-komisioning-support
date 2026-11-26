@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { adminStatus, classifyForMechanic, clockOff, expiryEndMs, isSupportUnit, landingSummary, purgeAfterMs } from './rules';
-import type { Snapshot, SnapUnit } from './types';
+import { adminStatus, classifyForMechanic, clockOff, expiryEndMs, isSupportUnit, purgeAfterMs } from './rules';
 
 const WITA = (iso: string) => Date.parse(iso + '+08:00');
 test('expiryEndMs = 23:59:59.999 WITA', () =>
@@ -35,28 +34,6 @@ test('adminStatus', () => {
   expect(adminStatus(4, '2026-12-01', now)).toBe('lengkap');
   expect(adminStatus(3, '2026-12-01', now)).toBe('lewat_expired');
 });
-test('landingSummary', () => {
-  const now = WITA('2026-12-10T08:00:00');
-  const s = (id: number, ber: string, sides: SnapUnit['sides'], inUp = true): SnapUnit => ({
-    id, period_id: 1, no_lambung: 'U' + id, perusahaan: 'P', kelompok_unit: 'K', jenis_unit: 'J',
-    week: 'W1', berlaku_akhir: ber, status_she: 'Belum Diajukan', in_latest_upload: inUp, sides,
-  });
-  const f = { kode: 'X', at: 1 };
-  const snap: Snapshot = {
-    version: 1, recent: [],
-    periods: [{ id: 1, label: 'Des/2026', purge_after: WITA('2027-01-31T23:59:59.999') }],
-    units: [
-      s(1, '2027-01-10', { depan: f, belakang: f, kanan: f, kiri: f }),
-      s(2, '2027-01-05', { depan: f, belakang: f }),
-      s(3, '2027-01-01', {}, false),
-    ],
-  };
-  const r = landingSummary(snap, now);
-  expect([r.total, r.lengkap, r.belum]).toEqual([2, 1, 1]);
-  expect(r.urgent[0].id).toBe(2);
-  expect(r.perWeek).toEqual([{ week: 'W1', total: 2, lengkap: 1 }]);
-});
-
 test('isSupportUnit', () => {
   const u = (no_lambung: string, perusahaan: string, kelompok_unit: string) => ({ no_lambung, perusahaan, kelompok_unit });
   expect(isSupportUnit(u('GS 0012', 'PPA', 'NON UNIT'))).toBe(true);

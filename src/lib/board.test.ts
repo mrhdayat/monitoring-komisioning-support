@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { boardView, searchKey } from './board';
+import { boardView, fmtTanggal, searchKey } from './board';
 import type { Snapshot, SnapUnit } from '../../shared/types';
 
 const NOW = Date.parse('2026-12-15T12:00:00+08:00');
@@ -55,4 +55,8 @@ test('poll mengubah status saat filter belum: unit hilang, skor naik', () => {
   const v = boardView(after, { status: 'belum', week: null, q: '' }, NOW);
   expect(v.lengkap).toBe(2);
   expect(v.groups.flatMap((g) => g.units.map((u) => u.no_lambung))).toEqual(['LT 0003']);
+});
+test('fmtTanggal: tanggal WITA apa adanya, tanpa nol di depan', () => {
+  expect(fmtTanggal('2027-01-01')).toBe('1 Jan 2027');
+  expect(fmtTanggal('2026-12-31')).toBe('31 Des 2026');
 });

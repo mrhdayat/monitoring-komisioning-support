@@ -29,7 +29,7 @@ describe('public', () => {
     expect(s.units[0].in_latest_upload).toBe(true);
     expect(s.periods.map((p) => p.label)).toEqual(['Des/2026']);
     expect(s.units[0].sides.depan).toEqual({ kode: 'AB1C-D2EF', at: 1000 });
-    expect(s.recent[0]).toEqual({ no_lambung: 'DT 4464', sisi: 'depan', at: 1000, kode: 'AB1C-D2EF' });
+    expect(s).not.toHaveProperty('recent');
     expect(JSON.stringify(s)).not.toContain('Budi');
     const r2 = await SELF.fetch('https://x/api/snapshot', { headers: { 'If-None-Match': r1.headers.get('ETag')! } });
     expect(r2.status).toBe(304);

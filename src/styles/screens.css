@@ -1,17 +1,4 @@
-/* Daftar unit mekanik */
-.screen.has-pill { padding-top: calc(var(--safe-t) + 60px); }
-
-.search {
-  display: block; width: 100%; height: 44px; margin-top: 12px; padding: 0 12px;
-  border: 2px solid var(--ink); border-radius: var(--r-btn); background: var(--surface); color: var(--text);
-  -webkit-appearance: none; appearance: none;
-}
-.search::placeholder { color: var(--mut); }
-
-.chips { display: flex; gap: 8px; margin: 6px -16px -6px; padding: 6px 16px; overflow-x: auto; scrollbar-width: none; } /* padding 6px: cincin fokus (5 px) tidak terpotong wadah gulir */
-.chips::-webkit-scrollbar { display: none; }
-.progress { margin-top: 14px; }
-
+/* Daftar bergrup (Antrean) */
 .empty { margin-top: 48px; padding: 0 16px; text-align: center; font-size: 17px; color: var(--mut); text-wrap: balance; }
 
 .grp { content-visibility: auto; }
@@ -23,41 +10,18 @@
 .grp-list li { position: relative; content-visibility: auto; contain-intrinsic-size: auto 64px; } /* ±400 baris: hanya yang terlihat ditata letak */
 .grp-list li + li::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; height: 1px; background: var(--rule); }
 
-.row {
-  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 64px; padding: 10px 14px;
-  text-align: left;
-}
-.row:active { background: var(--rule); }
-.row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.row-id { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-.row-period { padding: 2px 8px; border-radius: var(--r-sticker); background: var(--rule); font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--text); }
-.row-sub { font-size: 14px; color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row-r { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.row-exp { font-size: 12px; font-weight: 500; color: var(--mut); }
-.row-chev { flex: none; width: 8px; height: 14px; fill: none; stroke: var(--mut); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-.done { margin-top: 24px; }
-.done summary {
-  display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 16px;
-  font-size: 15px; font-weight: 600; color: var(--mut); cursor: pointer; list-style: none;
-}
-.done summary::-webkit-details-marker { display: none; }
-.done summary .row-chev { transition: transform 200ms var(--ease-out); }
-.done[open] summary .row-chev { transform: rotate(90deg); }
-
-/* Tab bar: pita hitam penuh, tab aktif bergaris neon di tepi atas. */
+/* Tab bar: batang --head, tab aktif bergaris bawah neon 3 px. Papan lebar memakai tautan header. */
 .tabbar {
   position: fixed; z-index: 40; left: 0; right: 0; bottom: 0;
   display: flex; padding-bottom: var(--safe-b); background: var(--head);
 }
 .tab {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 60px;
-  font-family: var(--font-cond); font-size: 16px; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em;
+  flex: 1; display: flex; align-items: center; justify-content: center; min-height: 56px;
+  font-family: var(--font-cond); font-size: 18px; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em;
   color: var(--on-head-mut);
 }
-.tab[aria-current="page"] { color: var(--neon); box-shadow: inset 0 3px 0 var(--neon); }
-.tab-ic { display: grid; place-items: center; }
-.tab-ic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-current="page"] { color: var(--neon); box-shadow: inset 0 -3px 0 var(--neon); }
+@media (min-width: 1024px) { .tabbar[data-at="/"] { display: none; } }
 
 /* Sheet nama + NRP */
 .mk-form { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
@@ -179,7 +143,7 @@
 .q-hist { padding: 12px 14px; font-size: 14px; line-height: 1.4; }
 .grp .btn-plain { justify-content: flex-start; padding: 0 16px; width: auto; font-size: 15px; }
 
-/* Kolom Cek Kode Foto (landing + layar Cek) */
+/* Kolom Cek Kode Foto */
 .l-cek { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .l-input {
   flex: 1; min-width: 0; height: 48px; padding: 0 14px; border: 2px solid var(--ink); border-radius: var(--r-btn);

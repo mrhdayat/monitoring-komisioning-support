@@ -83,9 +83,17 @@ Sumber: `src/styles/tokens.css`. Jangan menambah warna di luar daftar ini.
 - Focus: `:focus-visible` dengan outline 3 px neon yang menempel di elemen, diapit tepi 2 px `--ink`
   di luarnya. Pada tombol `--ink`, neon kontras dengan isi tombol. Pada latar terang, tepi `--ink`
   kontras dengan latar. Jadi cincin selalu mengubah piksel di sekitar elemen, juga bagi pengguna buta
-  warna. Baris di wadah yang memotong (`.row`, `.ut-row`, foto di `.cek-card`) memakai cincin yang
+  warna. Baris di wadah yang memotong (`.ut-row`, foto di `.cek-card`) memakai cincin yang
   sama tetapi digambar ke dalam. Penanda status (`.tab`, `.adm-nav`, `.ut-row` aktif) tetap terlihat
   saat difokus.
+
+## Papan Stiker (`src/styles/papan.css`)
+
+- `.sticker[data-s]`: `<button>` minimal 44×44 px, radius 5 px, condensed 20 px (22 px di ≥ 1024 px), lubang
+  bulat berwarna `--bg`. `lengkap` = neon, `sebagian` = `--yel-bg` bertepi `--yel` + label "n/4",
+  `belum` = `--surface` bertepi 2 px `--or`. No lambung panjang dibungkus, tidak dipotong.
+- Kepala grup: garis `--ink` 2 px di atas, nama jenis condensed, "x/y lengkap" `--mut`.
+- Di ≥ 1024 px grup berjajar (`auto-fill`, min 440 px) dan tab bar papan diganti tautan header.
 
 ## Gerak
 

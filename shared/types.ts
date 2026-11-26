@@ -27,7 +27,6 @@ export interface Snapshot {
   version: number;                  // ms saat dibangun
   periods: { id: number; label: string; purge_after: number }[];
   units: SnapUnit[];                // hanya status_she 'Belum Diajukan' dari periode yang belum dihapus
-  recent: { no_lambung: string; sisi: Sisi; at: number; kode: string }[]; // 8 terbaru per received_at
 }
 export interface PhotoMeta {        // header X-Foto-Meta = encodeURIComponent(JSON)
   kode: string; unitId: number; sisi: Sisi;

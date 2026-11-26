@@ -1,4 +1,4 @@
-import type { AdminStatus, ImportUnit, Section, Snapshot, SnapUnit } from './types';
+import type { AdminStatus, ImportUnit, Section, SnapUnit } from './types';
 
 const WITA_MS = 8 * 3600_000; // Asia/Makassar tetap UTC+8, tanpa DST
 
@@ -47,30 +47,4 @@ export function adminStatus(sidesDone: number, berlakuAkhir: string, now: number
   if (sidesDone === 4) return 'lengkap';
   if (isExpired(berlakuAkhir, now)) return 'lewat_expired';
   return sidesDone === 0 ? 'belum' : 'sebagian';
-}
-
-export function landingSummary(s: Snapshot, now: number) {
-  const purged = new Map(s.periods.map((p) => [p.id, p.purge_after <= now]));
-  const counted: { u: SnapUnit; done: number }[] = [];
-  for (const u of s.units) {
-    const done = Object.keys(u.sides).length;
-    const isPurged = purged.get(u.period_id) ?? false;
-    const sec = classifyForMechanic(u, done, isPurged, now);
-    const lateIncomplete = u.status_she === 'Belum Diajukan' && !isPurged && done < 4 && isExpired(u.berlaku_akhir, now);
-    if (sec !== 'tersembunyi' || lateIncomplete) counted.push({ u, done });
-  }
-  const weeks = new Map<string, { week: string; total: number; lengkap: number }>();
-  for (const { u, done } of counted) {
-    const w = weeks.get(u.week) ?? { week: u.week, total: 0, lengkap: 0 };
-    w.total++;
-    if (done === 4) w.lengkap++;
-    weeks.set(u.week, w);
-  }
-  const lengkap = counted.filter((c) => c.done === 4).length;
-  const urgent = counted
-    .filter((c) => c.done < 4 && !isExpired(c.u.berlaku_akhir, now))
-    .map((c) => c.u)
-    .sort((a, b) => expiryEndMs(a.berlaku_akhir) - expiryEndMs(b.berlaku_akhir))
-    .slice(0, 6);
-  return { total: counted.length, lengkap, belum: counted.length - lengkap, perWeek: [...weeks.values()], urgent };
 }
