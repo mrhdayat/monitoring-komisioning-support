@@ -133,6 +133,7 @@
 .q-send { margin-top: 16px; }
 .q-note { margin-top: 12px; font-size: 14px; line-height: 1.4; color: var(--mut); }
 .q-info { margin-top: 12px; padding: 12px; border-radius: var(--r-sticker); background: var(--surface); box-shadow: inset 0 0 0 2px var(--or); color: var(--or-ink); font-size: 14px; font-weight: 500; line-height: 1.4; }
+.q-off { position: static; justify-content: flex-start; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--r-sticker); transition: none; }
 .q-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px; }
 .q-thumb { flex: none; width: 48px; height: 64px; border-radius: var(--r-sticker); overflow: hidden; background: var(--rule); }
 .q-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }

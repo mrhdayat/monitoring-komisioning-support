@@ -19,8 +19,15 @@
 @font-face {
   font-family: "Barlow Condensed Arial";
   font-weight: 700 800;
-  src: local("Arial Bold"), local("Arial-BoldMT"), local("Roboto Bold"), local("Roboto-Bold");
+  src: local("Arial Bold"), local("Arial-BoldMT");
   size-adjust: 69.5%; ascent-override: 143.9%; descent-override: 28.8%; line-gap-override: 0%;
+}
+/* Roboto Bold (Android) 6 % lebih lebar dari Arial Bold: diukur terpisah (Roboto Condensed ±1 % dari Arial Narrow, tetap di atas). */
+@font-face {
+  font-family: "Barlow Condensed Roboto";
+  font-weight: 700 800;
+  src: local("Roboto Bold"), local("Roboto-Bold");
+  size-adjust: 73.7%; ascent-override: 135.7%; descent-override: 27.1%; line-gap-override: 0%;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -148,7 +155,7 @@ input, textarea, select { font: inherit; font-size: 17px; }
   touch-action: none; /* gestur tarik milik sheet */
 }
 .sheet-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--ink); margin: 0 auto 16px; }
-.sheet-title { font-family: var(--font-cond); font-size: 26px; font-weight: 800; line-height: 1.05; text-transform: uppercase; }
+.sheet-title { font-family: var(--font-cond); font-size: 26px; font-weight: 800; line-height: 1.05; text-transform: uppercase; overflow-wrap: anywhere; }
 
 /* Focus: neon 3 px menempel di elemen, diapit tepi --ink 2 px di luarnya. Selalu mengubah piksel di
    sekitar elemen: di tombol --ink neon kontras dengan isinya, di latar terang tepi --ink kontras dengan latar.

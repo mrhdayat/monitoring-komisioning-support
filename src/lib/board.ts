@@ -57,7 +57,8 @@ export function boardView(s: Snapshot, f: BoardFilter, now: number): BoardView {
 
   return {
     total: shown.length, lengkap, belum: shown.length - lengkap,
-    periods: [...new Set(shown.map((u) => periods.get(u.period_id)?.label).filter((l): l is string => !!l))],
+    // Urut snapshot (sama dengan urutan week), bukan urutan unit pertama yang kebetulan muncul.
+    periods: s.periods.filter((p) => shown.some((u) => u.period_id === p.id)).map((p) => p.label),
     weeks, week, groups,
   };
 }

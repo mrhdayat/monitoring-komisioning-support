@@ -21,7 +21,7 @@
   --hazard: repeating-linear-gradient(-45deg, var(--yel) 0 10px, var(--head) 10px 20px);
 
   --font: "Inter Variable", system-ui, sans-serif;
-  --font-cond: "Barlow Condensed", "Barlow Condensed Narrow", "Barlow Condensed Arial", sans-serif;
+  --font-cond: "Barlow Condensed", "Barlow Condensed Narrow", "Barlow Condensed Arial", "Barlow Condensed Roboto", sans-serif;
 
   --r-sticker: 5px;
   --r-btn: 4px;

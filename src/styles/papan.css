@@ -52,14 +52,16 @@
 .p-stickers { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Stiker: lengkap = neon, sebagian = kuning muda + "n/4", belum = putih bertepi oranye. Lubang = latar halaman. */
+/* Tepi belum: --or-ink di terang (5,0:1 di --bg; --or hanya 2,6:1, WCAG 1.4.11), --or di gelap (5,9:1). */
 .sticker {
-  --bd: var(--or);
+  --bd: var(--or-ink);
   display: inline-flex; align-items: center; gap: 8px; min-width: 44px; min-height: 44px; max-width: 100%;
   padding: 8px 12px 8px 8px; border: 2px solid var(--bd); border-radius: var(--r-sticker);
   background: var(--surface); color: var(--text); text-align: left;
   font-family: var(--font-cond); font-size: 20px; font-weight: 700; line-height: 1; text-transform: uppercase;
 }
 .sticker > i { flex: none; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--mut); background: var(--bg); }
+@media (prefers-color-scheme: dark) { .sticker { --bd: var(--or); } }
 .sticker[data-s="lengkap"] { --bd: var(--neon); background: var(--neon); color: var(--on-neon); }
 .sticker[data-s="sebagian"] { --bd: var(--yel); background: var(--yel-bg); color: var(--on-neon); }
 .sticker[data-s="lengkap"] > i, .sticker[data-s="sebagian"] > i { border-color: var(--on-neon); }

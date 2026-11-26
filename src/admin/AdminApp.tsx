@@ -38,7 +38,8 @@ export default function AdminApp() {
     if (user === null && route === '/admin/:tab?') navigate('/admin/login', { replace: true }); // mis. Back setelah keluar
   }, [user, route, tab]);
 
-  if (route === '/admin/login') return user === undefined ? null : <Login onLogin={setUser} />;
+  // Form login tampil tanpa menunggu /api/admin/me (LCP); bila ternyata sudah masuk, efek di atas pindah ke /admin/unit.
+  if (route === '/admin/login') return <Login onLogin={setUser} />;
   if (!user || !tab) return null;
 
   async function logout() {

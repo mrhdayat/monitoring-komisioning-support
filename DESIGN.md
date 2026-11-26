@@ -45,15 +45,36 @@ Sumber: `src/styles/tokens.css`. Jangan menambah warna di luar daftar ini.
 | `--surface` di tombol `--ink` | 17,6 | 14,0 |
 | `--on-neon` di `--neon` / `--yel` / `--yel-bg` | 14,3 / 10,3 / 15,3 | sama |
 | `--neon` / `--or` / `--on-head-mut` di `--head` | 14,3 / 5,9 / 9,0 | 15,3 / 6,3 / 9,6 |
+| `--on-head` / `--yel` di `--head` | 18,4 / 10,3 | 19,7 / 11,0 |
+| `--text` di `--rule` (kepala tabel) | 12,7 | 10,6 |
+| Pil antrean `.q-status` (`--on-neon` di `--yel-bg`) / `.q-bad` (`--or-ink` di `--surface`) | 15,3 / 5,7 | 15,3 / 6,5 |
+| `.ud-ph` placeholder (`--mut` di `--surface`) | 7,4 | 6,7 |
+| `.cam-check` 12 px (`--on-neon` di neon / kuning; `#D1D1D6` di hitam) | 14,3 / 10,3 / 13,8 | sama |
+| Kamera: teks sekunder `#AEAEB2` di hitam | 9,5 | sama |
 
 `--or-ink` di `--rule` terang hanya 4,1:1, jadi teks oranye tidak boleh di atas `--rule`.
+Diukur ulang di Fase E (27 Nov 2026), semua pasangan di atas lolos AA.
+
+### Kontras non-teks (WCAG 1.4.11 ≥ 3:1)
+
+| Penanda | Terang | Gelap |
+|---|---|---|
+| Tepi stiker belum: `--or-ink` (terang) / `--or` (gelap) di `--bg` | 5,0 | 5,9 |
+| Cincin focus: neon di tombol `--ink`, tepi `--ink` di `--bg` | 14,3 / 15,4 | sama |
+
+Stiker belum hanya ditandai tepinya (tanpa teks "n/4"), jadi tepinya wajib ≥ 3:1. `--or` (`#FF5A1F`)
+hanya 2,6:1 di `--bg` terang, karena itu di mode terang tepi stiker belum memakai `--or-ink`. Di gelap
+`--or` sudah 5,9:1 dan tetap dipakai. Penanda lain yang memakai `--or`/`--yel` (badge admin, pil antrean,
+kotak pita pesan, tombol "Hapus foto") selalu berteks, jadi status tidak bergantung pada tepinya.
 
 ## Tipografi
 
 - **Barlow Condensed** 700/800, huruf besar (kelas `.cond`, `--font-cond`): judul, skor, no lambung,
   tombol, filter, tab bar, kepala tabel. Hanya subset Latin 700 dan 800.
-- Selama Barlow dimuat, cadangan lokal (Arial Narrow/Roboto Condensed, lalu Arial/Roboto) diskalakan
-  dengan `size-adjust` yang diukur, supaya lebar teks hampir sama dan tata letak tidak melompat.
+- Selama Barlow dimuat, cadangan lokal (Arial Narrow/Roboto Condensed 84,8 %, Arial 69,5 %, Roboto 73,7 %)
+  diskalakan dengan `size-adjust` yang diukur per font, supaya lebar teks hampir sama dan tata letak
+  tidak melompat. Roboto Condensed selisih ±1 % dari Arial Narrow sehingga berbagi wajah; Roboto Bold
+  6 % lebih lebar dari Arial Bold sehingga punya wajah sendiri.
 - **Inter Variable** (`--font`) untuk isi, form, dan pesan. Watermark tetap Inter dan tidak berubah.
 - Angka yang berubah pakai `font-variant-numeric: tabular-nums`.
 - Huruf besar dengan tracking lebar hanya untuk tanda/rambu. Tidak ada eyebrow di atas setiap bagian.
@@ -91,7 +112,7 @@ Sumber: `src/styles/tokens.css`. Jangan menambah warna di luar daftar ini.
 
 - `.sticker[data-s]`: `<button>` minimal 44×44 px, radius 5 px, condensed 20 px (22 px di ≥ 1024 px), lubang
   bulat berwarna `--bg`. `lengkap` = neon, `sebagian` = `--yel-bg` bertepi `--yel` + label "n/4",
-  `belum` = `--surface` bertepi 2 px `--or`. No lambung panjang dibungkus, tidak dipotong.
+  `belum` = `--surface` bertepi 2 px oranye (`--or-ink` di terang, `--or` di gelap; lihat kontras non-teks). No lambung panjang dibungkus, tidak dipotong.
 - Kepala grup: garis `--ink` 2 px di atas, nama jenis condensed, "x/y lengkap" `--mut`.
 - Di ≥ 1024 px grup berjajar (`auto-fill`, min 440 px) dan tab bar papan diganti tautan header.
 
