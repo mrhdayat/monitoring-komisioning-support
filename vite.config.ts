@@ -7,10 +7,36 @@ import { VitePWA } from 'vite-plugin-pwa';
 const adminChunk = (c: { name: string; facadeModuleId: string | null }) =>
   c.facadeModuleId?.includes('/src/admin/') || /xlsx|client-zip/.test(c.name) ? 'assets/admin-[name]-[hash].js' : 'assets/[name]-[hash].js';
 
+// Layar lazy yang dibuka langsung (/admin, /cek): chunk-nya, impor statisnya, CSS, dan font diunduh bersamaan
+// dengan bundle utama, bukan sesudahnya (LCP). Hanya skrip kecil di index.html; di papan tidak ada yang diunduh.
+const LAZY_ROUTES: [string, string][] = [['/admin', 'admin-AdminApp-'], ['/cek', 'CekKode-']];
+const lazyPreload = {
+  name: 'lazy-route-preload',
+  apply: 'build' as const,
+  transformIndexHtml: {
+    order: 'post' as const,
+    handler(html: string, ctx: { bundle?: Record<string, { fileName: string; imports?: string[]; viteMetadata?: { importedCss: Set<string> } }> }) {
+      const all = Object.values(ctx.bundle ?? {});
+      const fonts = all.map((c) => c.fileName).filter((f) => /(inter-latin-wght|barlow-condensed-latin-[78]00)-normal-.*\.woff2$/.test(f));
+      const map = Object.fromEntries(LAZY_ROUTES.map(([path, prefix]) => {
+        const c = all.find((x) => x.fileName.includes(prefix) && x.fileName.endsWith('.js'));
+        const files = c ? [c.fileName, ...(c.imports ?? []), ...(c.viteMetadata?.importedCss ?? []), ...fonts] : [];
+        return [path, files.filter((f) => !html.includes(f)).map((f) => `/${f}`)];
+      }));
+      const js = `for(const[p,hs]of Object.entries(${JSON.stringify(map)}))if(location.pathname.startsWith(p))for(const h of hs){`
+        + `const l=document.createElement('link');`
+        + `if(h.endsWith('.js'))l.rel='modulepreload';else{l.rel='preload';l.as=h.endsWith('.css')?'style':'font';l.crossOrigin='anonymous'}`
+        + `l.href=h;document.head.append(l)}`;
+      return html.replace('</head>', `<script>${js}</script></head>`);
+    },
+  },
+};
+
 export default defineConfig({
   build: { rolldownOptions: { output: { chunkFileNames: adminChunk, assetFileNames: (a: { names: string[] }) => (a.names[0]?.startsWith('AdminApp') ? 'assets/admin-[name]-[hash][extname]' : 'assets/[name]-[hash][extname]') } } },
   plugins: [
     react(),
+    lazyPreload,
     cloudflare(),
     VitePWA({
       strategies: 'injectManifest',
