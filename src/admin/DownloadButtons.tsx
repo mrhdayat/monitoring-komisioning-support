@@ -36,11 +36,11 @@ export default function DownloadButtons({ units, filename, zipLabel = 'Unduh ZIP
   return (
     <div className="dl">
       <div className="dl-row">
-        {rekap && <button type="button" className="dl-btn press" disabled={units.length === 0} onClick={sheet}>Excel rekap</button>}
+        {rekap && <button type="button" className="btn-2 btn-sm press" disabled={units.length === 0} onClick={sheet}>Excel rekap</button>}
         {prog ? (
-          <button type="button" className="dl-btn press" onClick={() => ctl.current?.abort()}>Batal</button>
+          <button type="button" className="btn-2 btn-sm press" onClick={() => ctl.current?.abort()}>Batal</button>
         ) : (
-          <button type="button" className="dl-btn dl-main press" disabled={photos === 0} onClick={zip}>{zipLabel}</button>
+          <button type="button" className="btn btn-sm press" disabled={photos === 0} onClick={zip}>{zipLabel}</button>
         )}
       </div>
       {prog && (

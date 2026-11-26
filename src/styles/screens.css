@@ -35,7 +35,7 @@
 .field[aria-invalid="true"] { border-color: var(--or); }
 .mk-err { min-height: 24px; margin-top: 4px; font-size: 14px; font-weight: 500; color: var(--or-ink); }
 .mk-form .btn { margin-top: 8px; }
-.btn:disabled { opacity: 0.5; }
+.btn:disabled, .btn-2:disabled { opacity: 0.5; cursor: default; }
 
 /* Panduan iPhone */
 .guide { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }

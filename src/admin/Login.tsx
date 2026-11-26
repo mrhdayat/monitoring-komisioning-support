@@ -46,7 +46,7 @@ export default function Login({ onLogin }: { onLogin: (username: string) => void
   return (
     <main className="adm-login">
       <form ref={card} className="adm-card" onSubmit={submit}>
-        <div className="adm-mark" aria-hidden="true" />
+        <div className="hazard" aria-hidden="true" />
         <h1>Masuk admin</h1>
         <p className="adm-sub">Khusus admin untuk upload data SHE dan unduh foto.</p>
         <label className="adm-fld">

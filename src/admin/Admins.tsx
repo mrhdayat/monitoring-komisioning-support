@@ -85,8 +85,8 @@ export default function Admins({ me }: { me: string }) {
                 <small>Dibuat {tgl.format(r.created_at)}</small>
               </div>
               <div className="ad-acts">
-                <button type="button" className="ud-btn press" onClick={() => open('reset', r)}>Reset password</button>
-                <button type="button" className="ud-btn ud-btn-del press" disabled={self} aria-describedby={self ? `ad-self-${r.id}` : undefined} onClick={() => open('del', r)}>Hapus</button>
+                <button type="button" className="btn-2 btn-sm press" onClick={() => open('reset', r)}>Reset password</button>
+                <button type="button" className="btn-2 btn-sm btn-del press" disabled={self} aria-describedby={self ? `ad-self-${r.id}` : undefined} onClick={() => open('del', r)}>Hapus</button>
                 {self && <span id={`ad-self-${r.id}`} className="ad-hint">Tidak bisa menghapus akun sendiri</span>}
               </div>
             </li>

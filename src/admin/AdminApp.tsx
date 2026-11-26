@@ -63,11 +63,14 @@ export default function AdminApp() {
         </div>
       </aside>
       <main className="adm-main">
-        <h1 className="large-title">{TABS.find((t) => t.id === tab)!.label}</h1>
-        {tab === 'unit' && <UnitTable />}
-        {tab === 'upload' && <Import />}
-        {tab === 'unduhan' && <Unduhan />}
-        {tab === 'admin' && <Admins me={user} />}
+        <div className="hazard" aria-hidden="true" />
+        <div className="adm-pg">
+          <h1 className="large-title">{TABS.find((t) => t.id === tab)!.label}</h1>
+          {tab === 'unit' && <UnitTable />}
+          {tab === 'upload' && <Import />}
+          {tab === 'unduhan' && <Unduhan />}
+          {tab === 'admin' && <Admins me={user} />}
+        </div>
       </main>
     </div>
   );

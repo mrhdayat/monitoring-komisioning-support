@@ -36,7 +36,7 @@ export default function UnitDetail({ unit, period, onClose, onChanged }: {
           <p>{unit.jenis_unit} · {unit.perusahaan}</p>
           <p>{unit.period} · {unit.week} · expired {unit.berlaku_akhir.split('-').reverse().join('/')}</p>
         </div>
-        <button type="button" className="ud-close press" onClick={onClose}>Tutup</button>
+        <button type="button" className="btn-2 btn-sm ud-close press" onClick={onClose}>Tutup</button>
       </header>
       {purged && <p className="ud-note">Foto sudah dihapus (retensi).</p>}
       {!purged && <DownloadButtons units={[unit]} rekap={false} zipLabel="Unduh ZIP unit ini" filename={`${unit.no_lambung.replace(/\s+/g, '')}.zip`} />}
@@ -86,7 +86,7 @@ function Photo({ unit, sisi, p, onDelete }: { unit: AdminUnit; sisi: Sisi; p: Ad
         {gps && <p className="ud-warn">⚠ Lokasi GPS tidak tersedia saat foto diambil</p>}
         <p className="ud-addr">{p.address ?? (gps ? '' : 'Alamat tidak tersedia')}</p>
         <div className="ud-acts">
-          <button type="button" className="ud-btn ud-btn-del press" onClick={onDelete}>Hapus foto</button>
+          <button type="button" className="btn-2 btn-sm btn-del press" onClick={onDelete}>Hapus foto</button>
         </div>
       </div>
     </>

@@ -25,9 +25,9 @@ function Chip({ u }: { u: AdminUnit }) {
       {u.status === 'belum' && <span className="badge badge-no">Belum</span>}
       {u.status === 'lengkap' && <span className="badge badge-ok">Lengkap</span>}
       {u.status === 'sebagian' && (
-        <span className="ut-part" role="img" aria-label={`Sebagian, ${n} dari 4 sisi`}>
+        <span className="badge badge-part" role="img" aria-label={`Sebagian, ${n} dari 4 sisi`}>
           <span className="dots">{SISI.map((s) => <i key={s} className={u.sides[s] ? 'on' : undefined} />)}</span>
-          <b>{n}/4</b>
+          {n}/4
         </span>
       )}
       {u.status === 'lewat_expired' && <span className="badge badge-late">Lewat expired{n > 0 && ` · ${n}/4`}</span>}
@@ -117,7 +117,7 @@ export default function UnitTable() {
     } catch { setCopyErr('Gagal menyalin. Izinkan akses papan klip di peramban, lalu coba lagi.'); }
   }
 
-  if (error && !data) return <p className="ut-state" role="alert">{error} <button type="button" className="ud-btn press" onClick={load}>Coba lagi</button></p>;
+  if (error && !data) return <p className="ut-state" role="alert">{error} <button type="button" className="btn-2 btn-sm press" onClick={load}>Coba lagi</button></p>;
   if (!data) return <p className="ut-state">Memuat…</p>;
 
   return (
@@ -143,7 +143,7 @@ export default function UnitTable() {
         <div className="ut-bar">
           <div className="ut-seg" role="group" aria-label="Status">
             {STATUS.map((s) => (
-              <button key={s.id} type="button" className="ut-seg-b press" aria-pressed={f.status === s.id} onClick={() => set({ status: s.id })}>{s.label}</button>
+              <button key={s.id} type="button" className="chip press" aria-pressed={f.status === s.id} onClick={() => set({ status: s.id })}>{s.label}</button>
             ))}
           </div>
           <label className="ut-chk">
@@ -153,7 +153,7 @@ export default function UnitTable() {
         </div>
         <div className="ut-bar ut-bar-end">
           <span className="ut-count">{rows.length} unit</span>
-          <button type="button" className="ut-copy press" disabled={todo.length === 0} onClick={copy}>Salin daftar untuk WA ({todo.length})</button>
+          <button type="button" className="btn btn-sm press" disabled={todo.length === 0} onClick={copy}>Salin daftar untuk WA ({todo.length})</button>
         </div>
         <DownloadButtons units={rows} filename={zipFile(data.periods.find((p) => p.id === f.periodId)?.label, f.week)} />
         {copyErr && <p className="ut-err" role="alert">{copyErr}</p>}

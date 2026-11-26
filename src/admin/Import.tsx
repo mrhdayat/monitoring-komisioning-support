@@ -98,7 +98,7 @@ export default function Import() {
       {prev && (
         <div className="im-prev">
           <h2 className="im-h">{prev.name}</h2>
-          <p>{nf.format(prev.supportRows)} unit support dari {nf.format(prev.totalRows)} baris</p>
+          {prev.totalRows > 0 && <p className="im-sum"><b className="cond">{nf.format(prev.supportRows)}</b> unit support dari {nf.format(prev.totalRows)} baris</p>}
           {prev.groups.map((g) => (
             <dl key={g.label} className="im-card">
               <div className="im-per"><dt>Periode</dt><dd>{g.label}</dd></div>
@@ -119,7 +119,7 @@ export default function Import() {
               <progress max={run.total} value={run.done} aria-label="Kemajuan penyimpanan" />
             </p>
           )}
-          <button type="button" className="ut-copy press im-go" disabled={n === 0 || !!run} onClick={save}>Simpan {nf.format(n)} unit</button>
+          <button type="button" className="btn btn-sm press im-go" disabled={n === 0 || !!run} onClick={save}>Simpan {nf.format(n)} unit</button>
         </div>
       )}
 
