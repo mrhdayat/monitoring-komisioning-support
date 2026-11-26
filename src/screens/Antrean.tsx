@@ -105,7 +105,7 @@ export default function Antrean() {
     <main className="s-page">
       <header className="p-head">
         <div className="p-head-in"><h1 className="cond p-title">Antrean</h1></div>
-        <div className="hazard" />
+        <div className="hazard" aria-hidden="true" />
       </header>
       <div className="s-body">
       {isIOS() && <p className="q-note">Di iPhone, foto terkirim saat app dibuka dengan sinyal.</p>}

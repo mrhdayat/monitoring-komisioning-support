@@ -34,7 +34,7 @@ export default function CekKode() {
             <div className="p-links"><a href="/" className="p-link" onClick={(e) => { e.preventDefault(); navigate('/'); }}>‹ Kembali</a></div>
           </div>
         </div>
-        <div className="hazard" />
+        <div className="hazard" aria-hidden="true" />
       </header>
       <div className="s-body cek">
       <CekForm key={raw} initial={raw} replace />

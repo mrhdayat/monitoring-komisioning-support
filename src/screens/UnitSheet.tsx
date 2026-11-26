@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { expiryEndMs } from '../../shared/rules';
 import { SISI, type Sisi, type SnapUnit } from '../../shared/types';
 import { fmtTanggal, sidesDone } from '../lib/board';
@@ -18,6 +19,7 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
   const [big, setBig] = useState<Sisi | null>(null);
   const [rusak, setRusak] = useState<ReadonlySet<string>>(new Set());
   const [ask, setAsk] = useState(false);
+  const thumbs = useRef<Partial<Record<Sisi, HTMLButtonElement | null>>>({});
   if (unit && unit !== u) setU(unit);
   if (!!unit !== wasOpen) {
     setWasOpen(!!unit);
@@ -37,9 +39,18 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
       <Sheet open={!!unit} onClose={onClose} title={u?.no_lambung}>
         {u && (shot ? (
           <div className="us-big">
-            <img src={`/api/photo/${shot.kode}`} alt={`Foto ${LABEL[big!]} ${u.no_lambung}`} decoding="async" />
+            {rusak.has(shot.kode) ? <p className="us-ph">Foto belum bisa dimuat</p> : (
+              <img
+                src={`/api/photo/${shot.kode}`} alt={`Foto ${LABEL[big!]} ${u.no_lambung}`} decoding="async"
+                onError={() => setRusak((r) => new Set(r).add(shot.kode))}
+              />
+            )}
             <p className="us-meta">{LABEL[big!]} · dijepret {jam.format(shot.at)} WITA</p>
-            <button type="button" className="btn-2 press" onClick={() => setBig(null)} autoFocus>Kembali</button>
+            <button
+              type="button" className="btn-2 press" autoFocus
+              // Fokus kembali ke foto kecil yang tadi dibuka (bila masih ada), bukan hilang ke <dialog>.
+              onClick={() => { const s = big!; flushSync(() => setBig(null)); thumbs.current[s]?.focus(); }}
+            >Kembali</button>
           </div>
         ) : (
           <>
@@ -55,7 +66,7 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
                     {!side ? <span className="us-ph">Belum difoto</span>
                       : rusak.has(side.kode) ? <span className="us-ph">Foto belum bisa dimuat</span>
                       : (
-                        <button type="button" className="us-ph press" aria-label={`Perbesar foto ${LABEL[s]}`} onClick={() => setBig(s)}>
+                        <button type="button" className="us-ph press" ref={(el) => { thumbs.current[s] = el; }} aria-label={`Perbesar foto ${LABEL[s]}`} onClick={() => setBig(s)}>
                           <img
                             src={`/api/photo/${side.kode}`} alt="" loading="lazy" decoding="async"
                             onError={() => setRusak((r) => new Set(r).add(side.kode))}

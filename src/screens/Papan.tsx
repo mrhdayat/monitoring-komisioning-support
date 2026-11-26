@@ -53,7 +53,7 @@ export default function Papan() {
         <div className="p-head-in">
           <div className="p-top">
             <h1 className="p-title cond">Komisioning Section Support</h1>
-            <nav className="p-links" aria-label="Tautan">
+            <nav className="p-links" aria-label="Pintasan papan">
               {queue > 0 && <a className="p-link p-link-q press" {...link('/antrean')}>Antrean · {queue}</a>}
               <a className="p-link press" {...link('/cek')}>Cek kode</a>
             </nav>
@@ -74,7 +74,7 @@ export default function Papan() {
             </>
           )}
         </div>
-        <div className="hazard" />
+        <div className="hazard" aria-hidden="true" />
       </header>
 
       {!view && stale ? (
@@ -90,7 +90,7 @@ export default function Papan() {
               ))}
             </div>
             <span className="p-sel">
-              <select aria-label="Week" value={f.week ?? ''} onChange={(e) => set({ week: e.target.value || null })}>
+              <select aria-label="Week" value={view?.week ?? ''} onChange={(e) => set({ week: e.target.value || null })}>
                 <option value="">Semua week</option>
                 {view?.weeks.map((w) => <option key={w.key} value={w.key}>{w.label}</option>)}
               </select>

@@ -5,7 +5,8 @@ export type StatusFilter = 'semua' | 'belum' | 'sudah';
 export interface BoardFilter { status: StatusFilter; week: string | null; q: string } // week = WeekOption.key
 export interface WeekOption { key: string; label: string }        // key `${period_id}|${week}`
 export interface BoardGroup { jenis: string; lengkap: number; total: number; units: SnapUnit[] }
-export interface BoardView { total: number; lengkap: number; belum: number; periods: string[]; weeks: WeekOption[]; groups: BoardGroup[] }
+// week = filter week yang benar-benar dipakai: null bila week pilihan sudah hilang dari data.
+export interface BoardView { total: number; lengkap: number; belum: number; periods: string[]; weeks: WeekOption[]; week: string | null; groups: BoardGroup[] }
 
 export const searchKey = (s: string): string =>
   s.toUpperCase().replace(/\s+/g, '').replace(/\d+/g, (d) => String(Number(d)));
@@ -37,9 +38,10 @@ export function boardView(s: Snapshot, f: BoardFilter, now: number): BoardView {
   const weeks = [...weekMap].sort(([, a], [, b]) => a.pi - b.pi || num(a.week, b.week))
     .map(([key, w]) => ({ key, label: w.label }));
 
+  const week = f.week !== null && weekMap.has(f.week) ? f.week : null;
   const q = searchKey(f.q);
   const scoped = shown.filter((u) =>
-    (f.week === null || `${u.period_id}|${u.week}` === f.week) && searchKey(u.no_lambung).includes(q));
+    (week === null || `${u.period_id}|${u.week}` === week) && searchKey(u.no_lambung).includes(q));
   const byJenis = new Map<string, SnapUnit[]>();
   for (const u of scoped) {
     const k = jenisKey(u.jenis_unit);
@@ -56,6 +58,6 @@ export function boardView(s: Snapshot, f: BoardFilter, now: number): BoardView {
   return {
     total: shown.length, lengkap, belum: shown.length - lengkap,
     periods: [...new Set(shown.map((u) => periods.get(u.period_id)?.label).filter((l): l is string => !!l))],
-    weeks, groups,
+    weeks, week, groups,
   };
 }

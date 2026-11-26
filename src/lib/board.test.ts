@@ -48,6 +48,9 @@ test('week: label berawalan periode bila >1 periode, filter week', () => {
   expect(v.weeks.map((w) => w.label)).toEqual(['Des/2026 · Week 1', 'Jan/2027 · Week 2']);
   const w = boardView(snap, { status: 'semua', week: v.weeks[1].key, q: '' }, NOW);
   expect(w.groups.flatMap((g) => g.units.map((u) => u.no_lambung))).toEqual(['LT 0003']);
+  // Week pilihan hilang dari data baru: filter gugur, tidak menyaring diam-diam.
+  const gone = boardView(snap, { status: 'semua', week: '999|Week 9', q: '' }, NOW);
+  expect([gone.week, gone.groups.length]).toEqual([null, v.groups.length]);
 });
 test('poll mengubah status saat filter belum: unit hilang, skor naik', () => {
   const after = structuredClone(snap);
