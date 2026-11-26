@@ -19,7 +19,7 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
   const [big, setBig] = useState<Sisi | null>(null);
   const [rusak, setRusak] = useState<ReadonlySet<string>>(new Set());
   const [ask, setAsk] = useState(false);
-  const thumbs = useRef<Partial<Record<Sisi, HTMLButtonElement | null>>>({});
+  const thumbs = useRef<Partial<Record<Sisi, HTMLLIElement | null>>>({});
   if (unit && unit !== u) setU(unit);
   if (!!unit !== wasOpen) {
     setWasOpen(!!unit);
@@ -48,8 +48,8 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
             <p className="us-meta">{LABEL[big!]} · dijepret {jam.format(shot.at)} WITA</p>
             <button
               type="button" className="btn-2 press" autoFocus
-              // Fokus kembali ke foto kecil yang tadi dibuka (bila masih ada), bukan hilang ke <dialog>.
-              onClick={() => { const s = big!; flushSync(() => setBig(null)); thumbs.current[s]?.focus(); }}
+              // Fokus kembali ke foto kecil yang tadi dibuka; bila foto gagal dimuat, ke kotak sisinya. Tidak hilang ke <body>.
+              onClick={() => { const s = big!; flushSync(() => setBig(null)); const li = thumbs.current[s]; (li?.querySelector('button') ?? li)?.focus(); }}
             >Kembali</button>
           </div>
         ) : (
@@ -62,11 +62,11 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
               {SISI.map((s) => {
                 const side = u.sides[s];
                 return (
-                  <li key={s}>
+                  <li key={s} ref={(el) => { thumbs.current[s] = el; }} tabIndex={-1}>
                     {!side ? <span className="us-ph">Belum difoto</span>
                       : rusak.has(side.kode) ? <span className="us-ph">Foto belum bisa dimuat</span>
                       : (
-                        <button type="button" className="us-ph press" ref={(el) => { thumbs.current[s] = el; }} aria-label={`Perbesar foto ${LABEL[s]}`} onClick={() => setBig(s)}>
+                        <button type="button" className="us-ph press" aria-label={`Perbesar foto ${LABEL[s]}`} onClick={() => setBig(s)}>
                           <img
                             src={`/api/photo/${side.kode}`} alt="" loading="lazy" decoding="async"
                             onError={() => setRusak((r) => new Set(r).add(side.kode))}
