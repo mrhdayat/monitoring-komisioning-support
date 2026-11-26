@@ -45,8 +45,6 @@ button, a, [role="button"] {
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 /* ≥16 px: Safari iOS tidak memperbesar halaman saat kolom difokus. */
 input, textarea, select { font: inherit; font-size: 17px; }
-/* Neon di luar, tepi --ink di dalam: terlihat di latar terang, gelap, dan di atas neon sendiri. */
-:focus-visible { outline: 3px solid var(--neon); outline-offset: 0; box-shadow: inset 0 0 0 2px var(--ink); }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
@@ -161,6 +159,13 @@ input, textarea, select { font: inherit; font-size: 17px; }
 }
 .sheet-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--ink); margin: 0 auto 14px; }
 .sheet-title { font-family: var(--font-cond); font-size: 26px; font-weight: 800; line-height: 1.05; text-transform: uppercase; }
+
+/* Focus: neon 3 px menempel di elemen, diapit tepi --ink 2 px di luarnya. Selalu mengubah piksel di
+   sekitar elemen: di tombol --ink neon kontras dengan isinya, di latar terang tepi --ink kontras dengan latar.
+   :root menaikkan spesifisitas di atas kelas tunggal yang memakai box-shadow sebagai tepi (.chip, .btn-2). */
+:root :focus-visible { outline: 3px solid var(--neon); outline-offset: 0; box-shadow: 0 0 0 5px var(--ink); }
+/* Di dalam wadah yang memotong (content-visibility, overflow): cincin yang sama digambar ke dalam. */
+:root :is(.row, .ut-row):focus-visible, :root .cek-card a:focus-visible { outline-offset: -5px; box-shadow: inset 0 0 0 2px var(--ink); }
 
 /* Global: gerak diganti pergantian langsung. Tekanan tetap memberi umpan balik lewat opacity. */
 @media (prefers-reduced-motion: reduce) {

@@ -80,8 +80,12 @@ Sumber: `src/styles/tokens.css`. Jangan menambah warna di luar daftar ini.
   dan banner "foto akan dihapus".
 - Sheet: `--surface`, tepi 2 px `--ink`, radius 12 px di atas, pegangan `--ink`.
 - Kolom isian: `--surface`, tepi 2 px `--ink`. Bila salah, tepi oranye dan pesan `--or-ink`.
-- Focus: `:focus-visible` dengan outline 3 px neon dan tepi dalam 2 px `--ink`. Terlihat di terang,
-  gelap, dan kamera.
+- Focus: `:focus-visible` dengan outline 3 px neon yang menempel di elemen, diapit tepi 2 px `--ink`
+  di luarnya. Pada tombol `--ink`, neon kontras dengan isi tombol. Pada latar terang, tepi `--ink`
+  kontras dengan latar. Jadi cincin selalu mengubah piksel di sekitar elemen, juga bagi pengguna buta
+  warna. Baris di wadah yang memotong (`.row`, `.ut-row`, foto di `.cek-card`) memakai cincin yang
+  sama tetapi digambar ke dalam. Penanda status (`.tab`, `.adm-nav`, `.ut-row` aktif) tetap terlihat
+  saat difokus.
 
 ## Gerak
 

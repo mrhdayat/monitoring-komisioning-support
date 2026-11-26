@@ -8,7 +8,7 @@
 }
 .search::placeholder { color: var(--mut); }
 
-.chips { display: flex; gap: 8px; margin: 8px -16px -4px; padding: 4px 16px; overflow-x: auto; scrollbar-width: none; } /* padding 4px: cincin fokus tidak terpotong wadah gulir */
+.chips { display: flex; gap: 8px; margin: 6px -16px -6px; padding: 6px 16px; overflow-x: auto; scrollbar-width: none; } /* padding 6px: cincin fokus (5 px) tidak terpotong wadah gulir */
 .chips::-webkit-scrollbar { display: none; }
 .progress { margin-top: 14px; }
 
@@ -28,7 +28,6 @@
   text-align: left;
 }
 .row:active { background: var(--rule); }
-.row:focus-visible { outline-offset: -3px; } /* li ber-content-visibility memotong apa pun di luar baris */
 .row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .row-id { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 .row-period { padding: 2px 8px; border-radius: var(--r-sticker); background: var(--rule); font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--text); }
