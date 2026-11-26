@@ -26,9 +26,17 @@ export default function CekKode() {
   const cur = kode && res?.kode === kode ? res.r : null;
 
   return (
-    <main className="screen cek">
-      <a href="/" className="cek-back" onClick={(e) => { e.preventDefault(); navigate('/'); }}>‹ Kembali</a>
-      <h1 className="large-title">Cek Kode Foto</h1>
+    <main className="s-page">
+      <header className="p-head">
+        <div className="p-head-in">
+          <div className="p-top">
+            <h1 className="cond p-title">Cek Kode Foto</h1>
+            <div className="p-links"><a href="/" className="p-link" onClick={(e) => { e.preventDefault(); navigate('/'); }}>‹ Kembali</a></div>
+          </div>
+        </div>
+        <div className="hazard" />
+      </header>
+      <div className="s-body cek">
       <CekForm key={raw} initial={raw} replace />
 
       {kode && !cur && <p className="cek-msg" role="status">Memeriksa…</p>}
@@ -47,6 +55,7 @@ export default function CekKode() {
           </dl>
         </article>
       )}
+      </div>
     </main>
   );
 }

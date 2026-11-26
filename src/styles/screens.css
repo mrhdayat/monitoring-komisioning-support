@@ -1,14 +1,15 @@
 /* Daftar bergrup (Antrean) */
-.empty { margin-top: 48px; padding: 0 16px; text-align: center; font-size: 17px; color: var(--mut); text-wrap: balance; }
+/* Halaman dengan header P (Antrean, Cek): header penuh lebar, isi di .s-body. */
+.s-page { min-height: 100dvh; padding-bottom: calc(var(--safe-b) + 56px + 32px); }
+.s-body { padding: 16px 16px 0; }
+.empty { margin-top: 32px; padding: 0 16px; text-align: center; font-size: 17px; color: var(--mut); text-wrap: balance; }
 
-.grp { content-visibility: auto; }
-.grp-h {
-  padding: 20px 16px 6px; font-size: 13px; font-weight: 600; line-height: 1.2;
-  color: var(--mut); text-transform: uppercase; letter-spacing: 0.02em;
-}
-.grp-list { margin: 0; padding: 0; list-style: none; background: var(--surface); border-radius: var(--r-sticker); overflow: hidden; }
-.grp-list li { position: relative; content-visibility: auto; contain-intrinsic-size: auto 64px; } /* ±400 baris: hanya yang terlihat ditata letak */
-.grp-list li + li::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; height: 1px; background: var(--rule); }
+/* Daftar bergrup (Antrean): kepala grup bergaris --ink, baris dipisah garis 2 px. */
+.grp { content-visibility: auto; margin-top: 24px; }
+.grp-h { padding-top: 8px; margin-bottom: 8px; border-top: 2px solid var(--ink); font-family: var(--font-cond); font-size: 20px; font-weight: 800; line-height: 1.1; text-transform: uppercase; }
+.grp-list { margin: 0; padding: 0; list-style: none; background: var(--surface); border: 2px solid var(--ink); border-radius: var(--r-sticker); overflow: hidden; }
+.grp-list li { content-visibility: auto; contain-intrinsic-size: auto 96px; } /* ±400 baris: hanya yang terlihat ditata letak */
+.grp-list li + li { border-top: 2px solid var(--ink); }
 
 /* Tab bar: batang --head, tab aktif bergaris bawah neon 3 px. Papan lebar memakai tautan header. */
 .tabbar {
@@ -24,24 +25,24 @@
 @media (min-width: 1024px) { .tabbar[data-at="/"] { display: none; } }
 
 /* Sheet nama + NRP */
-.mk-form { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
-.mk-note { font-size: 14px; color: var(--mut); margin-bottom: 8px; }
-.mk-field label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; }
+.mk-form { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.mk-note { margin-bottom: 8px; font-size: 15px; line-height: 1.4; color: var(--mut); }
+.mk-field label { display: block; margin-bottom: 8px; font-size: 15px; font-weight: 600; }
 .field {
-  display: block; width: 100%; height: 48px; padding: 0 14px; border: 2px solid var(--ink);
+  display: block; width: 100%; height: 48px; padding: 0 12px; border: 2px solid var(--ink);
   border-radius: var(--r-btn); background: var(--surface); color: var(--text);
 }
 .field[aria-invalid="true"] { border-color: var(--or); }
-.mk-err { min-height: 20px; margin-top: 4px; font-size: 14px; font-weight: 500; color: var(--or-ink); }
+.mk-err { min-height: 24px; margin-top: 4px; font-size: 14px; font-weight: 500; color: var(--or-ink); }
 .mk-form .btn { margin-top: 8px; }
 .btn:disabled { opacity: 0.5; }
 
 /* Panduan iPhone */
-.guide { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.guide { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
 .guide-lead { font-size: 17px; line-height: 1.4; }
-.guide-ic { display: inline-block; width: 22px; height: 22px; margin: 0 4px -5px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.guide-ic { display: inline-block; width: 28px; height: 28px; margin: 0 4px -8px; padding: 3px; border: 2px solid var(--ink); border-radius: var(--r-btn); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .guide-why { font-size: 14px; line-height: 1.4; color: var(--mut); }
-.guide .btn { margin-top: 10px; }
+.guide .btn { margin-top: 8px; }
 
 /* Kamera: latar hitam ala kamera iPhone (§7.2 no. 3) */
 .cam {
@@ -49,23 +50,25 @@
   padding: var(--safe-t) 0 var(--safe-b);
   background: #000; color: #fff;
 }
-.cam-top { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; padding: 4px 10px 2px; }
+.cam-top { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; padding: 4px 8px 0; }
 .cam-x { display: grid; place-items: center; width: 44px; height: 44px; }
-.cam-x > span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 16px; background: rgba(255, 255, 255, 0.14); }
+.cam-x > span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-btn); background: rgba(255, 255, 255, 0.14); }
 .cam-x svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
 .cam-unit { min-width: 0; text-align: center; }
-.cam-unit h1 { font-size: 17px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cam-unit h1 { font-family: var(--font-cond); font-size: 24px; font-weight: 800; line-height: 1.05; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cam-unit p { font-size: 12px; font-weight: 500; color: #aeaeb2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Empat kolom sama lebar: ✓ yang muncul tidak menggeser pil lain. */
-.cam-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; max-width: 420px; margin-inline: auto; padding: 0 12px 4px; }
-.cam-step { padding: 6px 0; min-width: 0; } /* area ketuk 44 px */
+/* Kotak langkah, empat kolom sama lebar: ✓ yang muncul tidak menggeser kotak lain. Selesai neon, sedang kuning, sisanya garis tipis. */
+.cam-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 420px; margin-inline: auto; padding: 0 8px 4px; }
+.cam-step { padding: 4px 0; min-width: 0; } /* area ketuk 44 px */
 .cam-step > span {
-  display: flex; align-items: center; justify-content: center; gap: 3px; height: 32px; border-radius: 16px;
-  background: rgba(255, 255, 255, 0.12); color: #d1d1d6; font-size: 13px; font-weight: 600; white-space: nowrap;
+  display: flex; align-items: center; justify-content: center; gap: 2px; height: 36px; border-radius: var(--r-sticker);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3); color: #d1d1d6;
+  font-family: var(--font-cond); font-size: 15px; font-weight: 700; text-transform: uppercase; white-space: nowrap;
 }
-.cam-step[data-done] > span { background: rgba(201, 243, 29, 0.18); color: var(--neon); }
-.cam-step[aria-current="step"] > span { background: var(--neon); color: var(--on-neon); }
+.cam-step .cam-check { font-size: 12px; }
+.cam-step[data-done] > span { background: var(--neon); box-shadow: none; color: var(--on-neon); }
+.cam-step[aria-current="step"] > span { background: var(--yel); box-shadow: none; color: var(--on-neon); }
 .cam-check { font-style: normal; transition: opacity 250ms var(--ease-out); @starting-style { opacity: 0; } }
 
 /* Pratinjau 3:4 sebesar mungkin di ruang yang tersisa (SE 375×667 pun muat). */
@@ -73,22 +76,22 @@
 .cam-vf { position: relative; width: min(100cqw, 75cqh); aspect-ratio: 3 / 4; overflow: hidden; background: #111; container-type: inline-size; }
 .cam-vf video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cam-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center; }
-.cam-msg h2 { font-size: 20px; font-weight: 700; }
+.cam-msg h2 { font-family: var(--font-cond); font-size: 24px; font-weight: 800; line-height: 1.05; text-transform: uppercase; }
 .cam-msg p { font-size: 15px; color: #aeaeb2; text-wrap: balance; }
 .cam-msg .btn { width: auto; margin-top: 12px; background: #fff; color: var(--on-neon); }
 .cam-fly { position: fixed; z-index: 30; object-fit: cover; pointer-events: none; will-change: transform; }
 
-.cam-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 24px 20px; }
-.cam-last { justify-self: start; width: 48px; height: 48px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.3); overflow: hidden; }
+.cam-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 24px; }
+.cam-last { justify-self: start; width: 48px; height: 48px; border-radius: var(--r-sticker); border: 2px solid rgba(255, 255, 255, 0.3); overflow: hidden; }
 .cam-last:has(img) { border-color: #fff; }
 .cam-last img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .cam-shutter { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; border: 4px solid #fff; }
-.cam-shutter i { width: 60px; height: 60px; border-radius: 50%; background: #fff; transition: transform 100ms var(--ease-out), opacity 150ms var(--ease-out); }
+.cam-shutter i { width: 60px; height: 60px; border-radius: 50%; background: var(--yel); transition: transform 100ms var(--ease-out), opacity 150ms var(--ease-out); }
 .cam-shutter:not([aria-disabled]):active i { transform: scale(0.9); }
 .cam-shutter[aria-disabled] { cursor: default; }
 .cam-shutter[aria-disabled] i { opacity: 0.4; }
-.cam-gps { justify-self: end; width: 84px; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: center; color: #aeaeb2; }
-.cam-gps-on { color: var(--neon); font-variant-numeric: tabular-nums; }
+.cam-gps { justify-self: end; width: 84px; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: center; color: #aeaeb2; font-variant-numeric: tabular-nums; }
+.cam-gps-on { color: var(--neon); }
 .cam-gps-off { color: var(--or); }
 
 /* Watermark pratinjau: angka = renderWatermarked (fraksi lebar foto). */
@@ -109,18 +112,18 @@
 .wm-c { margin-top: 0.6cqw; font-size: 3cqw; opacity: 0.9; }
 
 /* Sheet setelah jepret */
-.cam-sheet-sub { margin-top: 2px; font-size: 15px; color: var(--mut); }
-.cam-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0 20px; padding: 0; list-style: none; }
-.cam-thumbs li { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; text-align: center; color: var(--mut); }
+.cam-sheet-sub { margin-top: 4px; font-size: 15px; color: var(--mut); }
+.cam-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0 24px; padding: 0; list-style: none; }
+.cam-thumbs li { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; text-align: center; color: var(--mut); }
 .cam-thumbs li[data-done] { color: var(--text); }
 .cam-tile { display: block; aspect-ratio: 3 / 4; border-radius: var(--r-sticker); overflow: hidden; background: var(--rule); }
 .cam-tile:empty { background: transparent; border: 2px dashed var(--mut); }
 .cam-tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.cam-howto { margin: 0; padding-left: 22px; font-size: 17px; line-height: 1.4; display: flex; flex-direction: column; gap: 6px; }
+.cam-howto { margin: 0; padding-left: 24px; font-size: 17px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px; }
 
-.cam-refuse h2 { margin-top: 16px; font-size: 20px; font-weight: 700; line-height: 1.25; }
+.cam-refuse h2 { margin-top: 16px; font-family: var(--font-cond); font-size: 26px; font-weight: 800; line-height: 1.05; text-transform: uppercase; }
 .cam-refuse p { margin-top: 8px; font-size: 17px; color: var(--mut); }
-.cam-refuse .btn { margin-top: 28px; }
+.cam-refuse .btn { margin-top: 24px; }
 
 @media (prefers-reduced-motion: reduce) {
   .cam-shutter:not([aria-disabled]):active i { transform: none; opacity: 0.6; }
@@ -129,46 +132,50 @@
 /* Antrean */
 .q-send { margin-top: 16px; }
 .q-note { margin-top: 12px; font-size: 14px; line-height: 1.4; color: var(--mut); }
-.q-info { margin-top: 12px; padding: 12px 14px; border-radius: var(--r-sticker); background: var(--surface); box-shadow: inset 0 0 0 2px var(--or); color: var(--or-ink); font-size: 14px; font-weight: 500; line-height: 1.4; }
-.q-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; }
+.q-info { margin-top: 12px; padding: 12px; border-radius: var(--r-sticker); background: var(--surface); box-shadow: inset 0 0 0 2px var(--or); color: var(--or-ink); font-size: 14px; font-weight: 500; line-height: 1.4; }
+.q-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px; }
 .q-thumb { flex: none; width: 48px; height: 64px; border-radius: var(--r-sticker); overflow: hidden; background: var(--rule); }
 .q-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.q-status { font-size: 14px; color: var(--mut); }
-.q-bad { color: var(--or-ink); font-weight: 500; }
+.row-main { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.row-id { font-family: var(--font-cond); font-size: 22px; font-weight: 800; line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
+.row-sub { font-size: 14px; color: var(--mut); font-variant-numeric: tabular-nums; }
+/* Pil gaya stiker: menunggu/mengirim = kuning muda, perlu tindakan = putih bertepi oranye. */
+.q-status { padding: 4px 8px; border-radius: var(--r-sticker); background: var(--yel-bg); box-shadow: inset 0 0 0 2px var(--yel); color: var(--on-neon); font-size: 13px; font-weight: 600; line-height: 1.2; }
+.q-bad { background: var(--surface); box-shadow: inset 0 0 0 2px var(--or); color: var(--or-ink); }
 .q-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.q-act { min-height: 44px; padding: 0 14px; border-radius: var(--r-btn); box-shadow: inset 0 0 0 2px var(--ink); font-size: 14px; font-weight: 600; color: var(--text); }
+.q-act { min-height: 44px; padding: 0 12px; border-radius: var(--r-btn); box-shadow: inset 0 0 0 2px var(--ink); font-family: var(--font-cond); font-size: 17px; font-weight: 700; text-transform: uppercase; color: var(--text); }
 .q-act:disabled { opacity: 0.5; }
 .q-danger { box-shadow: inset 0 0 0 2px var(--or); color: var(--or-ink); }
 .q-del { background: var(--or-ink); }
-.q-hist { padding: 12px 14px; font-size: 14px; line-height: 1.4; }
-.grp .btn-plain { justify-content: flex-start; padding: 0 16px; width: auto; font-size: 15px; }
+.q-hist { padding: 12px; font-size: 14px; line-height: 1.4; }
+.grp .btn-plain { justify-content: flex-start; padding: 0 4px; width: auto; font-size: 15px; }
 
 /* Kolom Cek Kode Foto */
-.l-cek { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.l-cek { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .l-input {
-  flex: 1; min-width: 0; height: 48px; padding: 0 14px; border: 2px solid var(--ink); border-radius: var(--r-btn);
+  flex: 1; min-width: 0; height: 48px; padding: 0 12px; border: 2px solid var(--ink); border-radius: var(--r-btn);
   background: var(--surface); color: var(--text); font-size: 17px; font-weight: 600; letter-spacing: 0.04em;
   text-transform: uppercase; -webkit-appearance: none; appearance: none;
 }
 .l-input::placeholder { color: var(--mut); font-weight: 500; }
 .l-input[aria-invalid="true"] { border-color: var(--or); }
 .l-btn {
-  min-height: 48px; padding: 0 22px; border-radius: var(--r-btn); background: var(--ink); color: var(--surface);
+  min-height: 48px; padding: 0 24px; border-radius: var(--r-btn); background: var(--ink); color: var(--surface);
   font-family: var(--font-cond); font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
 }
 .l-err { flex-basis: 100%; font-size: 14px; font-weight: 500; color: var(--or-ink); }
 
-/* Layar Cek Kode Foto */
+/* Layar Cek Kode Foto: hasil dalam kartu --surface bertepi --ink */
 .cek { max-width: 640px; margin-inline: auto; }
-.cek-back { display: inline-flex; align-items: center; min-height: 44px; font-size: 17px; font-weight: 600; color: var(--text); text-decoration: none; }
-.cek .l-cek { margin-bottom: 16px; }
+.cek .l-cek { margin: 0 0 24px; }
 .cek-msg { margin-top: 24px; font-size: 17px; line-height: 1.4; color: var(--mut); text-wrap: balance; }
 .cek-card { background: var(--surface); border: 2px solid var(--ink); border-radius: var(--r-sticker); overflow: hidden; }
-.cek-card a { display: block; background: var(--rule); }
+.cek-card a { position: relative; display: block; background: var(--rule); border-bottom: 2px solid var(--ink); }
 .cek-card img { display: block; width: 100%; height: auto; min-height: 160px; }
 .cek-card dl { margin: 0; padding: 4px 16px 8px; }
-.cek-card dl div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--rule); }
+.cek-card dl div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 12px 0; border-top: 1px solid var(--rule); }
 .cek-card dl div:first-child { border-top: 0; }
 .cek-card dt { font-size: 14px; color: var(--mut); }
 .cek-card dd { margin: 0; font-size: 15px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.cek-card dl div:first-child dd { font-family: var(--font-cond); font-size: 24px; font-weight: 800; text-transform: uppercase; }
 .cap { text-transform: capitalize; }

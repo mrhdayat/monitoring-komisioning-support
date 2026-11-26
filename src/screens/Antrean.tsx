@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, set } from 'idb-keyval';
 import { listQueue, processQueue, removeItem, unhold, type QueueItem } from '../lib/queue';
 import { Sheet } from '../ui/Sheet';
+import { Pill } from '../ui/Pill';
 import { isIOS } from './InstallGuide';
 
 const fmt = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', hourCycle: 'h23' });
@@ -101,8 +102,12 @@ export default function Antrean() {
   );
 
   return (
-    <main className="screen">
-      <h1 className="large-title">Antrean</h1>
+    <main className="s-page">
+      <header className="p-head">
+        <div className="p-head-in"><h1 className="cond p-title">Antrean</h1></div>
+        <div className="hazard" />
+      </header>
+      <div className="s-body">
       {isIOS() && <p className="q-note">Di iPhone, foto terkirim saat app dibuka dengan sinyal.</p>}
 
       {runNotices.map((n) => <p key={n} className="q-info" role="status">{n}</p>)}
@@ -112,7 +117,7 @@ export default function Antrean() {
           {running ? 'Mengirim…' : 'Kirim sekarang'}
         </button>
       )}
-      {!online && waiting.length > 0 && <p className="q-note">Tidak ada sinyal. Foto dikirim otomatis saat tersambung.</p>}
+      {!online && waiting.length > 0 && <Pill tone="offline">Tidak ada sinyal. Foto dikirim otomatis saat tersambung.</Pill>}
 
       {items && items.length === 0 && <p className="empty">Semua foto sudah terkirim</p>}
 
@@ -126,6 +131,8 @@ export default function Antrean() {
           <button type="button" className="btn-plain press" onClick={async () => { await set('notices', []); load(); }}>Bersihkan</button>
         </section>
       )}
+
+      </div>
 
       <Sheet open={delOpen} onClose={() => setDelOpen(false)} title="Hapus foto ini?">
         <div className="guide">

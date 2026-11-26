@@ -136,12 +136,12 @@ input, textarea, select { font: inherit; font-size: 17px; }
 .sheet {
   position: absolute; left: 0; right: 0; bottom: 0;
   max-width: 520px; margin-inline: auto;
-  padding: 10px 20px calc(var(--safe-b) + 20px); border: 2px solid var(--ink); border-bottom: 0;
+  padding: 12px 24px calc(var(--safe-b) + 24px); border: 2px solid var(--ink); border-bottom: 0;
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   background: var(--surface); color: var(--text); box-shadow: 0 -12px 40px rgb(0 0 0 / 0.2);
   touch-action: none; /* gestur tarik milik sheet */
 }
-.sheet-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--ink); margin: 0 auto 14px; }
+.sheet-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--ink); margin: 0 auto 16px; }
 .sheet-title { font-family: var(--font-cond); font-size: 26px; font-weight: 800; line-height: 1.05; text-transform: uppercase; }
 
 /* Focus: neon 3 px menempel di elemen, diapit tepi --ink 2 px di luarnya. Selalu mengubah piksel di
@@ -149,7 +149,10 @@ input, textarea, select { font: inherit; font-size: 17px; }
    :root menaikkan spesifisitas di atas kelas tunggal yang memakai box-shadow sebagai tepi (.chip, .btn-2). */
 :root :focus-visible { outline: 3px solid var(--neon); outline-offset: 0; box-shadow: 0 0 0 5px var(--ink); }
 /* Di dalam wadah yang memotong (content-visibility, overflow): cincin yang sama digambar ke dalam. */
-:root .ut-row:focus-visible, :root .cek-card a:focus-visible { outline-offset: -5px; box-shadow: inset 0 0 0 2px var(--ink); }
+:root .ut-row:focus-visible { outline-offset: -5px; box-shadow: inset 0 0 0 2px var(--ink); }
+/* Foto penuh di dalam tautan menutupi bayangan dalam: pita --ink digambar oleh lapisan di atas foto. */
+:root .cek-card a:focus-visible { outline-offset: -5px; box-shadow: none; }
+.cek-card a:focus-visible::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px var(--ink); }
 
 /* Global: gerak diganti pergantian langsung. Tekanan tetap memberi umpan balik lewat opacity. */
 @media (prefers-reduced-motion: reduce) {
