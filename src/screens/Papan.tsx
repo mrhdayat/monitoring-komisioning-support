@@ -133,6 +133,8 @@ export default function Papan() {
                           data-s={n === 4 ? 'lengkap' : n > 0 ? 'sebagian' : 'belum'}
                           aria-label={`${u.no_lambung}, ${n} dari 4 sisi`}
                           onClick={() => setPickId(u.id)}
+                          // Sekali saja: stiker yang dipasang ulang (ganti filter/cari) tanpa data baru tidak berdenyut lagi.
+                          onAnimationEnd={() => changed.delete(u.id)}
                         >
                           <i aria-hidden="true" />
                           <span className="st-no">{u.no_lambung}</span>
