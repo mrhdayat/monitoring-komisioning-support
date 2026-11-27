@@ -46,8 +46,11 @@ export async function unhold(kode: string): Promise<void> {
   changed();
 }
 
-export function decide(status: number, _body: unknown): 'hapus' | 'ulang' | 'kode_baru' | 'tolak' | 'tahan' {
-  if (status === 200) return 'hapus';
+export function decide(status: number, body: unknown): 'hapus' | 'ulang' | 'kode_baru' | 'tolak' | 'tahan' {
+  if (status === 200) { // hapus foto lokal hanya bila server benar-benar mengakui
+    const r = (body as { result?: string } | null)?.result;
+    return r === 'dipakai' || r === 'lebih_baru_ada' || r === 'duplikat' ? 'hapus' : 'ulang';
+  }
   if (status === 409) return 'kode_baru';
   if (status === 422) return 'tolak'; // aturan bisnis (expired / unit tidak berlaku): hapus + beri tahu
   if (status === 400) return 'tahan'; // data ditolak: simpan, mekanik/admin yang memutuskan (§9: hapus hanya bila server menerima)
@@ -83,7 +86,7 @@ async function run(render: boolean): Promise<Hasil> {
         if (final.type !== 'image/jpeg') throw new Error(`hasil render ${final.type}`);
         it = { ...it, address, final };
       } catch {
-        await set(it.kode, { ...it, error: 'Gagal membuat watermark' }, queueStore);
+        await set(it.kode, { ...it, held: true, error: 'Watermark gagal dibuat. Coba kirim lagi atau hapus foto ini.' }, queueStore);
         changed();
         continue;
       }

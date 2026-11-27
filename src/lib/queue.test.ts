@@ -48,6 +48,8 @@ test('enqueue: resolve hanya setelah item bisa dibaca', async () => {
 
 test('decide', () => {
   expect(decide(200, { result: 'lebih_baru_ada' })).toBe('hapus');
+  expect(decide(200, {})).toBe('ulang');
+  expect(decide(200, null)).toBe('ulang');
   expect(decide(409, {})).toBe('kode_baru');
   expect(decide(422, {})).toBe('tolak');
   expect(decide(400, { error: 'invalid' })).toBe('tahan');
@@ -146,8 +148,9 @@ test('processQueue: render gagal atau hasil bukan JPEG → item disimpan, tidak 
   expect(await processQueue({ render: true })).toMatchObject({ sent: 0, left: 2 });
   expect(sent).toHaveLength(0);
   const q = await listQueue();
-  expect(q.map((i) => [i.kode, i.final, i.error])).toEqual([
-    ['AAAA-0001', null, 'Gagal membuat watermark'], ['AAAA-0002', null, 'Gagal membuat watermark'],
+  expect(q.map((i) => [i.kode, i.final, i.held, i.error])).toEqual([
+    ['AAAA-0001', null, true, 'Watermark gagal dibuat. Coba kirim lagi atau hapus foto ini.'],
+    ['AAAA-0002', null, true, 'Watermark gagal dibuat. Coba kirim lagi atau hapus foto ini.'],
   ]);
 });
 

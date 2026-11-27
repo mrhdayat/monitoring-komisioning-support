@@ -13,8 +13,9 @@ declare const self: {
 // memuat chunk watermark + font ber-hash miliknya dari precache lama.
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
-// Semua navigasi ke index.html, kecuali /api/* (tidak pernah di-cache; tidak ada route lain untuk /api).
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/api\//] }));
+// Semua navigasi ke index.html, kecuali /api/* (tidak pernah di-cache) dan /admin* (online-only: chunk admin tidak
+// ada di precache, index.html lama akan menunjuk chunk yang sudah hilang setelah deploy).
+registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/api\//, /^\/admin/] }));
 
 self.addEventListener('sync', (e) => {
   if (e.tag !== 'antrean') return;

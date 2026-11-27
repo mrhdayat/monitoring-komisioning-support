@@ -116,7 +116,8 @@ export async function renderWatermarked(raw: Blob, text: WatermarkText): Promise
   const ly = base - fT * 0.82 - lh - fL * 0.5;
   c.fillStyle = KUNING;
   c.beginPath();
-  c.roundRect(mx, ly, lw, lh, fL * 0.3);
+  if (c.roundRect) c.roundRect(mx, ly, lw, lh, fL * 0.3); // iOS 15 / Chrome < 99: tanpa sudut membulat
+  else c.rect(mx, ly, lw, lh);
   c.fill();
   c.fillStyle = '#111';
   c.fillText(text.label, mx + fL * 0.7, ly + lh * 0.5 + fL * 0.36);
