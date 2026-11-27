@@ -8,10 +8,10 @@ const LOCK_MS = 15 * 60_000;
 const MAX_FAIL = 5;
 const DUMMY_HASH = `pbkdf2-sha256$${PBKDF2_ITER}$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=`;
 
-const sha256Hex = async (s: string) =>
+export const sha256Hex = async (s: string) =>
   [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))]
     .map((b) => b.toString(16).padStart(2, '0')).join('');
-const sidOf = (req: Request) => req.headers.get('cookie')?.match(/(?:^|;\s*)sid=([0-9a-f]+)/)?.[1];
+export const sidOf = (req: Request) => req.headers.get('cookie')?.match(/(?:^|;\s*)sid=([0-9a-f]+)/)?.[1];
 
 export async function requireAdmin(req: Request, env: Env, now = Date.now()): Promise<{ id: number; username: string } | null> {
   if (!['GET', 'HEAD', 'DELETE'].includes(req.method) && !req.headers.get('content-type')?.includes('application/json')) return null;

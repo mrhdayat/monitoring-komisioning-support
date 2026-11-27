@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { handleAdmin } from './admin';
-import { hashPassword, login } from './auth';
+import { hashPassword, login, sha256Hex } from './auth';
 import type { Env } from './http';
 
 const E = env as Env;
@@ -180,5 +180,103 @@ describe('admin', () => {
       for (const b of bad) expect((await put(b)).status).toBe(400);
       expect((await call('GET', '/api/admin/populasi')).body.units).toEqual([P('A1')]);
     });
+  });
+});
+
+describe('Google Drive OAuth', () => {
+  const DE = { ...E, STORAGE: 'drive', GOOGLE_CLIENT_ID: 'cid', GOOGLE_CLIENT_SECRET: 'sec' } as Env;
+  const idToken = (email: string) => `x.${btoa(JSON.stringify({ email })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}.y`;
+  const tokenFetch = (body: object, status = 200) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+  const good = () => tokenFetch({ access_token: 'AT', expires_in: 3600, refresh_token: 'RT', id_token: idToken('kantor@gmail.com') });
+  const go = (path: string, ck: string | null = cookie, env = DE, f: typeof fetch = good(), now = NOW) =>
+    handleAdmin(new Request(`https://x${path}`, { headers: ck ? { cookie: ck } : {} }), env, now, f);
+  const setting = async (k: string) => (await E.DB.prepare('SELECT v FROM pengaturan WHERE k = ?').bind(k).first<{ v: string }>())?.v ?? null;
+  const startState = async (ck = cookie, now = NOW) => {
+    const r = await go('/api/admin/drive/mulai', ck, DE, good(), now);
+    return new URL(r.headers.get('location')!).searchParams.get('state')!;
+  };
+  const saved = async () => (await E.DB.prepare("SELECT COUNT(*) n FROM pengaturan WHERE k LIKE 'drive_%'").first<{ n: number }>())!.n;
+  beforeEach(() => E.DB.batch([E.DB.prepare('DELETE FROM pengaturan'), E.DB.prepare('DELETE FROM drive_state')]));
+
+  it('mulai tanpa sesi → 401', async () => {
+    expect((await go('/api/admin/drive/mulai', null)).status).toBe(401);
+  });
+
+  it('mulai → 302 ke Google dengan parameter lengkap', async () => {
+    const r = await go('/api/admin/drive/mulai');
+    expect(r.status).toBe(302);
+    const u = new URL(r.headers.get('location')!);
+    expect(u.origin + u.pathname).toBe('https://accounts.google.com/o/oauth2/v2/auth');
+    expect(Object.fromEntries(u.searchParams)).toMatchObject({
+      client_id: 'cid', redirect_uri: 'https://x/api/admin/drive/kembali', response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/drive.file openid email', access_type: 'offline', prompt: 'consent',
+    });
+    expect(u.searchParams.get('state')).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('mulai tanpa client id/secret → /admin/admin?drive=gagal', async () => {
+    const r = await go('/api/admin/drive/mulai', cookie, E);
+    expect([r.status, r.headers.get('location')]).toEqual([302, '/admin/admin?drive=gagal']);
+  });
+
+  it('kembali dengan state benar → token + email tersimpan, root direset, ?drive=ok', async () => {
+    await E.DB.prepare("INSERT INTO pengaturan (k, v) VALUES ('drive_root_id', 'lama'), ('drive_status', 'terputus')").run();
+    const st = await startState();
+    const r = await go(`/api/admin/drive/kembali?code=C&state=${st}`);
+    expect([r.status, r.headers.get('location')]).toEqual([302, '/admin/admin?drive=ok']);
+    expect(await setting('drive_refresh_token')).toBe('RT');
+    expect(await setting('drive_email')).toBe('kantor@gmail.com');
+    expect(await setting('drive_status')).toBe('tersambung');
+    expect(await setting('drive_access_token')).toBe('AT');
+    expect(Number(await setting('drive_access_exp'))).toBe(NOW + 3600_000);
+    expect(await setting('drive_root_id')).toBeNull();
+  });
+
+  it('kembali menukar code dengan redirect_uri yang sama', async () => {
+    let sent: URLSearchParams | undefined;
+    const f = (async (_u: string, init: RequestInit) => { sent = init.body as URLSearchParams; return new Response(JSON.stringify({ access_token: 'a', refresh_token: 'r', id_token: idToken('a@b.c') })); }) as unknown as typeof fetch;
+    const st = await startState();
+    await go(`/api/admin/drive/kembali?code=C&state=${st}`, cookie, DE, f);
+    expect(Object.fromEntries(sent!)).toEqual({ code: 'C', client_id: 'cid', client_secret: 'sec', redirect_uri: 'https://x/api/admin/drive/kembali', grant_type: 'authorization_code' });
+  });
+
+  it('state salah / kedaluwarsa / sesi lain / dipakai dua kali → 400, tidak ada yang tersimpan', async () => {
+    expect((await go('/api/admin/drive/kembali?code=C&state=salah')).status).toBe(400);
+    expect((await go('/api/admin/drive/kembali?code=C')).status).toBe(400);
+    const old = await startState(cookie, NOW - 11 * 60_000);
+    expect((await go(`/api/admin/drive/kembali?code=C&state=${old}`)).status).toBe(400);
+    await E.DB.prepare('INSERT INTO admins (username, password_hash, created_at) VALUES (?, ?, 1)').bind('siti', await hashPassword('rahasia123')).run();
+    const r2 = await login(new Request('https://x/l', { method: 'POST', body: JSON.stringify({ username: 'siti', password: 'rahasia123' }), headers: { 'content-type': 'application/json' } }), E, NOW);
+    const other = r2.headers.get('set-cookie')!.split(';')[0];
+    const mine = await startState();
+    expect((await go(`/api/admin/drive/kembali?code=C&state=${mine}`, other)).status).toBe(400);
+    expect(await saved()).toBe(0);
+    // state milik sesi lain tidak terbakar; pemiliknya masih bisa memakainya sekali
+    expect((await go(`/api/admin/drive/kembali?code=C&state=${mine}`)).status).toBe(302);
+    await E.DB.prepare("DELETE FROM pengaturan").run();
+    expect((await go(`/api/admin/drive/kembali?code=C&state=${mine}`)).status).toBe(400);
+    expect(await saved()).toBe(0);
+    expect(await E.DB.prepare('SELECT 1 x FROM drive_state WHERE state_hash = ?').bind(await sha256Hex(mine)).first()).toBeNull();
+  });
+
+  it('Google menolak / tanpa refresh_token / tukar gagal → ?drive=gagal, tidak ada yang tersimpan', async () => {
+    for (const f of [tokenFetch({ access_token: 'a', id_token: idToken('a@b.c') }), tokenFetch({ error: 'invalid_grant' }, 400)]) {
+      const st = await startState();
+      const r = await go(`/api/admin/drive/kembali?code=C&state=${st}`, cookie, DE, f);
+      expect([r.status, r.headers.get('location')]).toEqual([302, '/admin/admin?drive=gagal']);
+    }
+    const st = await startState();
+    expect((await go(`/api/admin/drive/kembali?error=access_denied&state=${st}`)).headers.get('location')).toBe('/admin/admin?drive=gagal');
+    expect(await saved()).toBe(0);
+  });
+
+  it('status mengembalikan field yang benar', async () => {
+    const st = async (env = DE) => (await go('/api/admin/drive/status', cookie, env)).json();
+    expect(await st()).toEqual({ storage: 'drive', status: 'belum', email: null, folderUrl: null });
+    expect(await st(E)).toMatchObject({ storage: 'd1' });
+    await E.DB.prepare("INSERT INTO pengaturan (k, v) VALUES ('drive_refresh_token', 'r'), ('drive_email', 'k@g.c'), ('drive_root_id', 'ROOT')").run();
+    expect(await st()).toEqual({ storage: 'drive', status: 'tersambung', email: 'k@g.c', folderUrl: 'https://drive.google.com/drive/folders/ROOT' });
+    await E.DB.prepare("INSERT INTO pengaturan (k, v) VALUES ('drive_status', 'terputus')").run();
+    expect((await st() as any).status).toBe('terputus');
   });
 });

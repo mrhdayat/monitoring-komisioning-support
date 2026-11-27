@@ -1,6 +1,7 @@
 import { SISI, type AdminStatus, type Sisi, type SnapUnit } from '../shared/types';
 import { adminStatus, purgeAfterMs } from '../shared/rules';
-import { hashPassword, requireAdmin } from './auth';
+import { hashPassword, requireAdmin, sha256Hex, sidOf } from './auth';
+import { driveAuthUrl, driveConnect, getSetting } from './drive';
 import { err, json, readJson, type Env } from './http';
 import { rebuildSnapshot } from './snapshot';
 import { getStore } from './store';
@@ -157,7 +158,45 @@ async function admins(req: Request, env: Env, me: { id: number }, path: string, 
   return json({ ok: true });
 }
 
-export async function handleAdmin(req: Request, env: Env, now = Date.now()): Promise<Response> {
+const back = (ok: boolean) => new Response(null, { status: 302, headers: { location: `/admin/admin?drive=${ok ? 'ok' : 'gagal'}` } });
+
+async function drive(req: Request, env: Env, path: string, now: number, fetchImpl: typeof fetch) {
+  const url = new URL(req.url);
+  if (path === '/api/admin/drive/status') {
+    const g = (k: string) => getSetting(env, k);
+    const [refresh, status, email, root] = await Promise.all([g('drive_refresh_token'), g('drive_status'), g('drive_email'), g('drive_root_id')]);
+    return json({
+      storage: env.STORAGE === 'd1' ? 'd1' : 'drive',
+      status: !refresh ? 'belum' : status === 'terputus' ? 'terputus' : 'tersambung',
+      email, folderUrl: root ? `https://drive.google.com/drive/folders/${root}` : null,
+    });
+  }
+  const th = await sha256Hex(sidOf(req)!); // requireAdmin sudah memastikan cookie sid ada
+  const redirectUri = `${url.origin}/api/admin/drive/kembali`;
+  if (path === '/api/admin/drive/mulai') {
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return back(false);
+    const state = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM drive_state WHERE exp < ?').bind(now),
+      env.DB.prepare('INSERT INTO drive_state (state_hash, token_hash, exp) VALUES (?, ?, ?)').bind(await sha256Hex(state), th, now + 600_000),
+    ]);
+    return new Response(null, { status: 302, headers: { location: driveAuthUrl(env, redirectUri, state) } });
+  }
+  if (path === '/api/admin/drive/kembali') {
+    const state = url.searchParams.get('state');
+    // Sekali pakai: DELETE atomik, hanya cocok bila state milik sesi ini dan belum kedaluwarsa.
+    const used = state && await env.DB.prepare('DELETE FROM drive_state WHERE state_hash = ? AND token_hash = ? AND exp > ? RETURNING 1')
+      .bind(await sha256Hex(state), th, now).first();
+    if (!used) return err('state_tidak_valid', 400);
+    const code = url.searchParams.get('code');
+    if (!code) return back(false); // izin ditolak di Google
+    try { await driveConnect(env, code, redirectUri, now, fetchImpl); } catch { return back(false); }
+    return back(true);
+  }
+  return err('not_found', 404);
+}
+
+export async function handleAdmin(req: Request, env: Env, now = Date.now(), fetchImpl: typeof fetch = fetch): Promise<Response> {
   const me = await requireAdmin(req, env, now);
   if (!me) return err('unauthorized', 401);
   const path = new URL(req.url).pathname;
@@ -173,6 +212,7 @@ export async function handleAdmin(req: Request, env: Env, now = Date.now()): Pro
     try { kode = decodeURIComponent(kode); } catch { /* tak ditemukan → 404 */ }
     return deletePhoto(kode, env, now);
   }
+  if (path.startsWith('/api/admin/drive/') && method === 'GET') return drive(req, env, path, now, fetchImpl);
   if (path.startsWith('/api/admin/admins')) return admins(req, env, me, path, now);
   return err('not_found', 404);
 }

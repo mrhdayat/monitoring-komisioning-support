@@ -3,11 +3,45 @@ import { Sheet } from '../ui/Sheet';
 import { adminFetch } from './api';
 import PasswordField from './PasswordField';
 
+export interface DriveInfo { storage: 'drive' | 'd1'; status: 'tersambung' | 'terputus' | 'belum'; email: string | null; folderUrl: string | null }
 interface Row { id: number; username: string; created_at: number }
 const USER_RE = /^[a-z0-9._-]{3,40}$/;
 const tgl = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', day: 'numeric', month: 'long', year: 'numeric' });
 
-export default function Admins({ me }: { me: string }) {
+const DRIVE_MSG: Record<string, string> = {
+  ok: 'Google Drive tersambung. Foto baru akan disimpan di sana.',
+  gagal: 'Google Drive belum tersambung. Coba lagi, dan pastikan memilih Izinkan di halaman Google.',
+};
+
+function DrivePanel({ info }: { info: DriveInfo | null }) {
+  const flash = new URLSearchParams(location.search).get('drive');
+  if (!info) return null;
+  const lokal = info.storage === 'd1';
+  const label = { tersambung: 'Tersambung', terputus: 'Terputus', belum: 'Belum tersambung' }[info.status];
+  return (
+    <section className="ad-drive" aria-labelledby="ad-drive-h">
+      <h2 id="ad-drive-h">Penyimpanan foto</h2>
+      {lokal ? (
+        <p className="ad-drive-note">Mode lokal: foto disimpan di database (hanya untuk uji).</p>
+      ) : (
+        <>
+          <div className="ad-drive-row">
+            <span className={`ad-drive-st ad-drive-${info.status}`}>{label}</span>
+            {info.email && <span className="ad-drive-mail">{info.email}</span>}
+          </div>
+          {info.status === 'terputus' && <p className="ad-drive-note">Izin Google dicabut. Foto baru tertahan di HP mekanik sampai Drive disambungkan ulang.</p>}
+          {info.folderUrl && <a className="ad-drive-link" href={info.folderUrl} target="_blank" rel="noopener noreferrer">Buka folder Komisioning di Drive</a>}
+          <a className={`${info.status === 'tersambung' ? 'btn-2' : 'btn'} btn-sm press ad-drive-go`} href="/api/admin/drive/mulai">
+            {info.status === 'tersambung' ? 'Ganti akun' : 'Sambungkan Google Drive'}
+          </a>
+        </>
+      )}
+      {flash && DRIVE_MSG[flash] && <p className={`ad-drive-msg${flash === 'gagal' ? ' ad-drive-bad' : ''}`} role="status">{DRIVE_MSG[flash]}</p>}
+    </section>
+  );
+}
+
+export default function Admins({ me, drive }: { me: string; drive: DriveInfo | null }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState('');
   const [username, setUsername] = useState('');
@@ -75,6 +109,7 @@ export default function Admins({ me }: { me: string }) {
 
   return (
     <section className="ad" aria-label="Kelola admin">
+      <DrivePanel info={drive} />
       <ul className="ad-list">
         {rows.map((r) => {
           const self = r.username === me;

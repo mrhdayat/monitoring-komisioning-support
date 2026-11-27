@@ -1,6 +1,33 @@
 import type { Env } from './http';
 import type { Store } from './store';
 
+export const driveAuthUrl = (env: Env, redirectUri: string, state: string) =>
+  `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID ?? '', redirect_uri: redirectUri, response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/drive.file openid email', access_type: 'offline', prompt: 'consent', state,
+  })}`;
+
+// Tukar code → token lalu simpan sebagai akun Drive baru (folder root lama tak berlaku lagi). Lempar bila gagal.
+export async function driveConnect(env: Env, code: string, redirectUri: string, now: number, fetchImpl: typeof fetch = fetch) {
+  const r = await fetchImpl('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    body: new URLSearchParams({
+      code, client_id: env.GOOGLE_CLIENT_ID ?? '', client_secret: env.GOOGLE_CLIENT_SECRET ?? '', redirect_uri: redirectUri, grant_type: 'authorization_code',
+    }),
+  });
+  const j = (await r.json().catch(() => ({}))) as { access_token?: string; expires_in?: number; refresh_token?: string; id_token?: string };
+  if (!r.ok || !j.access_token || !j.refresh_token || !j.id_token) throw new Error('tukar_code_gagal');
+  // id_token diterima langsung dari Google lewat TLS, jadi payload-nya dibaca tanpa verifikasi tanda tangan JWT.
+  const b64 = j.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  const email = (JSON.parse(atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, '='))) as { email?: string }).email;
+  if (!email) throw new Error('email_kosong');
+  await env.DB.batch([
+    ['drive_refresh_token', j.refresh_token], ['drive_email', email], ['drive_status', 'tersambung'],
+    ['drive_access_token', j.access_token], ['drive_access_exp', String(now + (j.expires_in ?? 3600) * 1000)],
+  ].map(([k, v]) => env.DB.prepare('INSERT INTO pengaturan (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v').bind(k, v))
+    .concat(env.DB.prepare("DELETE FROM pengaturan WHERE k = 'drive_root_id'"))); // folder periode lama yang tak terjangkau dibuat ulang lewat Gone
+}
+
 export class DriveDisconnected extends Error {}
 // Folder induk hilang/di-trash di Drive: id tersimpan sudah dibersihkan, put() mengulang sekali.
 class Gone extends Error {}
@@ -9,9 +36,9 @@ const API = 'https://www.googleapis.com/drive/v3/files';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,trashed';
 const FOLDER = 'application/vnd.google-apps.folder';
 
-const getSetting = async (env: Env, k: string) =>
+export const getSetting = async (env: Env, k: string) =>
   (await env.DB.prepare('SELECT v FROM pengaturan WHERE k = ?').bind(k).first<{ v: string }>())?.v ?? null;
-const setSetting = (env: Env, k: string, v: string) =>
+export const setSetting = (env: Env, k: string, v: string) =>
   env.DB.prepare('INSERT INTO pengaturan (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v').bind(k, v).run();
 
 // Access token disimpan di D1 dan dipakai ulang sampai < 5 menit tersisa. `force` = abaikan cache (setelah 401).

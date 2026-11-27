@@ -206,3 +206,20 @@
 .ad-msg { text-align: left; }
 .ad-ok { min-height: 1.4em; margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
 .sheet .adm-fld { margin-top: 4px; }
+
+/* Penyimpanan foto (Google Drive) */
+.ad-drive { margin-bottom: 32px; padding: 16px; border-radius: var(--r-sticker); background: var(--surface); }
+.ad-drive h2 { margin-bottom: 12px; font-family: var(--font-cond); font-size: 24px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+.ad-drive-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.ad-drive-st { padding: 2px 10px; border-radius: var(--r-btn); box-shadow: inset 0 0 0 2px var(--mut); font-size: 14px; font-weight: 700; }
+.ad-drive-tersambung { background: var(--neon); color: var(--on-neon); box-shadow: none; }
+.ad-drive-terputus { box-shadow: inset 0 0 0 2px var(--or); color: var(--or-ink); }
+.ad-drive-mail { min-width: 0; overflow-wrap: anywhere; font-size: 15px; font-weight: 600; }
+.ad-drive-note { margin-top: 8px; font-size: 14px; color: var(--mut); }
+.ad-drive-link { display: block; width: fit-content; margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--text); text-underline-offset: 3px; }
+.ad-drive-go { display: inline-flex; align-items: center; justify-content: center; margin-top: 16px; text-decoration: none; }
+.ad-drive-msg { margin-top: 12px; font-size: 14px; font-weight: 600; }
+.ad-drive-bad { color: var(--or-ink); }
+.adm-warn { margin: 0; padding: 10px 32px; background: var(--surface); box-shadow: inset 0 -3px 0 var(--or); font-size: 14px; font-weight: 600; }
+.adm-warn a { color: var(--text); text-underline-offset: 3px; }
+@media (max-width: 1023px) { .adm-warn { padding: 10px 16px; } }

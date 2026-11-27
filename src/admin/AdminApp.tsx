@@ -6,7 +6,7 @@ import Import from './Import';
 import UnitTable from './UnitTable';
 import Populasi from './PopulasiScreen';
 import Unduhan from './Unduhan';
-import Admins from './Admins';
+import Admins, { type DriveInfo } from './Admins';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import '../styles/admin.css';
 
@@ -34,6 +34,12 @@ export default function AdminApp() {
         else if (!j && !onLogin) navigate('/admin/login', { replace: true });
       });
   }, []);
+
+  const [drive, setDrive] = useState<DriveInfo | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    adminFetch('/api/admin/drive/status').then((r) => (r.ok ? r.json() : null)).then(setDrive).catch(() => {});
+  }, [user]);
 
   const tab = TABS.find((t) => t.id === params.tab)?.id;
   useEffect(() => {
@@ -69,13 +75,19 @@ export default function AdminApp() {
       </aside>
       <main className="adm-main">
         <div className="hazard" aria-hidden="true" />
+        {drive?.storage === 'drive' && drive.status === 'terputus' && (
+          <p className="adm-warn" role="alert">
+            Google Drive terputus. Foto baru tertahan di HP mekanik sampai disambungkan ulang.{' '}
+            {tab !== 'admin' && <a href="/admin/admin" onClick={(e) => { e.preventDefault(); navigate('/admin/admin'); }}>Buka pengaturan</a>}
+          </p>
+        )}
         <div className="adm-pg">
           <h1 className="large-title">{TABS.find((t) => t.id === tab)!.label}</h1>
           {tab === 'unit' && <UnitTable />}
           {tab === 'upload' && <Import />}
           {tab === 'populasi' && <Populasi />}
           {tab === 'unduhan' && <Unduhan />}
-          {tab === 'admin' && <Admins me={user} />}
+          {tab === 'admin' && <Admins me={user} drive={drive} />}
         </div>
       </main>
     </div>
