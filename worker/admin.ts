@@ -10,8 +10,34 @@ const periodOk = (p: unknown): p is string => {
   if (!str(p)) return false;
   try { purgeAfterMs(p); return true; } catch { return false; }
 };
+const txt = (v: unknown): v is string => str(v) && v.length <= 60;
+const txtOrNull = (v: unknown) => v === null || txt(v);
 const validUnit = (u: any) =>
-  u && typeof u === 'object' && FIELDS.every((f) => str(u[f])) && /^\d{4}-\d{2}-\d{2}$/.test(u.berlaku_akhir);
+  u && typeof u === 'object' && FIELDS.every((f) => str(u[f])) && /^\d{4}-\d{2}-\d{2}$/.test(u.berlaku_akhir)
+  && txtOrNull(u.code_unit) && txtOrNull(u.skr_bib) && ['cocok', 'ganda', 'tidak_ada'].includes(u.pop_status);
+
+const POP_MAX = 2000;
+const POP_FIELDS = ['code_unit', 'skr_bib', 'jenis', 'maint'] as const;
+
+async function getPopulasi(env: Env) {
+  const { results } = await env.DB.prepare('SELECT code_unit, skr_bib, jenis, maint, uploaded_at FROM populasi ORDER BY code_unit').all<any>();
+  return json({ units: results.map(({ uploaded_at, ...u }) => u), uploaded_at: results[0]?.uploaded_at ?? null });
+}
+
+async function putPopulasi(req: Request, env: Env, now: number) {
+  const b = await readJson<any>(req);
+  if (!b || !Array.isArray(b.units) || b.units.length > POP_MAX
+    || !b.units.every((u: any) => u && typeof u === 'object' && POP_FIELDS.every((f) => txt(u[f])))
+    || new Set(b.units.map((u: any) => u.code_unit)).size !== b.units.length) return err('invalid', 400);
+  // Satu batch: murah di CPU paket gratis, dan atomik (gagal = tabel lama utuh).
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM populasi'),
+    ...b.units.map((u: Record<string, string>) =>
+      env.DB.prepare('INSERT INTO populasi (code_unit, skr_bib, jenis, maint, uploaded_at) VALUES (?, ?, ?, ?, ?)')
+        .bind(u.code_unit, u.skr_bib, u.jenis, u.maint, now)),
+  ]);
+  return json({ count: b.units.length });
+}
 
 async function importBatch(req: Request, env: Env, now: number) {
   const b = await readJson<any>(req);
@@ -24,12 +50,14 @@ async function importBatch(req: Request, env: Env, now: number) {
   ).bind(b.period, now, purgeAfterMs(b.period)).first<{ id: number }>();
   await env.DB.batch(b.units.map((u: Record<string, string>) =>
     env.DB.prepare(
-      `INSERT INTO units (period_id, no_lambung, perusahaan, kelompok_unit, jenis_unit, berlaku_akhir, week, status_she, import_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO units (period_id, no_lambung, perusahaan, kelompok_unit, jenis_unit, berlaku_akhir, week, status_she, import_id,
+                          code_unit, skr_bib, pop_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(period_id, no_lambung) DO UPDATE SET perusahaan = excluded.perusahaan,
          kelompok_unit = excluded.kelompok_unit, jenis_unit = excluded.jenis_unit, berlaku_akhir = excluded.berlaku_akhir,
-         week = excluded.week, status_she = excluded.status_she, import_id = excluded.import_id`,
-    ).bind(period!.id, u.no_lambung, u.perusahaan, u.kelompok_unit, u.jenis_unit, u.berlaku_akhir, u.week, u.status_she, b.importId)));
+         week = excluded.week, status_she = excluded.status_she, import_id = excluded.import_id,
+         code_unit = excluded.code_unit, skr_bib = excluded.skr_bib, pop_status = excluded.pop_status`,
+    ).bind(period!.id, u.no_lambung, u.perusahaan, u.kelompok_unit, u.jenis_unit, u.berlaku_akhir, u.week, u.status_she, b.importId, u.code_unit, u.skr_bib, u.pop_status)));
   return json({ ok: true, count: b.units.length });
 }
 
@@ -52,7 +80,7 @@ async function listUnits(env: Env, now: number) {
     env.DB.prepare('SELECT id, label, purge_after, purged_at FROM periods ORDER BY id'),
     env.DB.prepare(
       `SELECT u.id, u.period_id, u.no_lambung, u.perusahaan, u.kelompok_unit, u.jenis_unit, u.week, u.berlaku_akhir,
-              u.status_she, u.in_latest_upload, p.label AS period FROM units u JOIN periods p ON p.id = u.period_id ORDER BY u.id`),
+              u.status_she, u.in_latest_upload, u.code_unit, u.skr_bib, u.pop_status, p.label AS period FROM units u JOIN periods p ON p.id = u.period_id ORDER BY u.id`),
     env.DB.prepare(
       `SELECT unit_id, sisi, kode_foto AS kode, captured_at_device, received_at_server, clock_offset_s, mekanik_nama,
               mekanik_nrp, flags, address, lat, lon FROM photos`),
@@ -131,6 +159,8 @@ export async function handleAdmin(req: Request, env: Env, now = Date.now()): Pro
   if (path === '/api/admin/import' && method === 'POST') return importBatch(req, env, now);
   if (path === '/api/admin/import/finish' && method === 'POST') return finish(req, env, now);
   if (path === '/api/admin/units' && method === 'GET') return listUnits(env, now);
+  if (path === '/api/admin/populasi' && method === 'GET') return getPopulasi(env);
+  if (path === '/api/admin/populasi' && method === 'PUT') return putPopulasi(req, env, now);
   const ph = path.match(/^\/api\/admin\/photo\/([^/]+)$/);
   if (ph && method === 'DELETE') {
     let kode = ph[1];

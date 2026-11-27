@@ -21,12 +21,15 @@ beforeEach(async () => {
 
 describe('public', () => {
   it('snapshot berisi unit Belum Diajukan + sides + ETag 304', async () => {
+    await env.DB.prepare("UPDATE units SET code_unit='DT44', skr_bib='DT0044', pop_status='cocok' WHERE id=1").run();
     await rebuildSnapshot(env);
     const r1 = await SELF.fetch('https://x/api/snapshot');
     expect(r1.headers.get('Cache-Control')).toBe('no-cache');
     const s = await r1.json<Snapshot>();
     expect(s.units.map((u) => u.no_lambung)).toEqual(['DT 4464']);
     expect(s.units[0].in_latest_upload).toBe(true);
+    expect(s.units[0]).toMatchObject({ code_unit: 'DT44', skr_bib: 'DT0044' });
+    expect(s.units[0]).not.toHaveProperty('pop_status');
     expect(s.periods.map((p) => p.label)).toEqual(['Des/2026']);
     expect(s.units[0].sides.depan).toEqual({ kode: 'AB1C-D2EF', at: 1000 });
     expect(s).not.toHaveProperty('recent');

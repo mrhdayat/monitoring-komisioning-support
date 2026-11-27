@@ -15,7 +15,7 @@ const call = async (method: string, url: string, body?: unknown, ck: string | nu
   }), E, NOW);
   return { status: res.status, body: await res.json<any>() };
 };
-const U = (n: string, extra = {}) => ({ no_lambung: n, perusahaan: 'PT A', kelompok_unit: 'K', jenis_unit: 'DT', berlaku_akhir: '2030-01-01', week: 'W1', status_she: 'Belum Diajukan', ...extra });
+const U = (n: string, extra = {}) => ({ no_lambung: n, perusahaan: 'PT A', kelompok_unit: 'K', jenis_unit: 'DT', berlaku_akhir: '2030-01-01', week: 'W1', status_she: 'Belum Diajukan', code_unit: null, skr_bib: null, pop_status: 'tidak_ada', ...extra });
 const imp = (units: unknown[], importId = 'i1') => call('POST', '/api/admin/import', { period: 'Des/2026', importId, units });
 const fin = (importId: string) => call('POST', '/api/admin/import/finish', { period: 'Des/2026', importId });
 const photo = (unit: number, sisi: string, kode: string, flags = '') =>
@@ -23,7 +23,7 @@ const photo = (unit: number, sisi: string, kode: string, flags = '') =>
     VALUES (?,?,?,?,1,1,1,0,'Budi','1',?)`).bind(unit, sisi, kode, `foto/${kode}.jpg`, flags).run();
 
 beforeEach(async () => {
-  await E.DB.batch(['sessions', 'photos', 'units', 'periods', 'admins'].map((t) => E.DB.prepare(`DELETE FROM ${t}`)));
+  await E.DB.batch(['sessions', 'photos', 'units', 'periods', 'admins', 'populasi'].map((t) => E.DB.prepare(`DELETE FROM ${t}`)));
   await E.DB.prepare('INSERT INTO admins (username, password_hash, created_at) VALUES (?, ?, 1)').bind('budi', await hashPassword('rahasia123')).run();
   const r = await login(new Request('https://x/l', { method: 'POST', body: JSON.stringify({ username: 'budi', password: 'rahasia123' }), headers: { 'content-type': 'application/json' } }), E, NOW);
   cookie = r.headers.get('set-cookie')!.split(';')[0];
@@ -60,6 +60,16 @@ describe('admin', () => {
     expect((await E.DB.prepare("SELECT in_latest_upload FROM units WHERE no_lambung='A 2'").first<any>()).in_latest_upload).toBe(0);
     expect((await E.DB.prepare('SELECT COUNT(*) n FROM photos').first<any>()).n).toBe(1);
     expect((await E.DB.prepare("SELECT week FROM units WHERE no_lambung='A 1'").first<any>()).week).toBe('W9');
+  });
+
+  it('impor menyimpan code_unit, skr_bib, pop_status; field baru divalidasi', async () => {
+    await imp([U('TL 141', { code_unit: 'TL141', skr_bib: 'TL0141', pop_status: 'cocok' })]);
+    const { body } = await call('GET', '/api/admin/units');
+    expect(body.units[0]).toMatchObject({ code_unit: 'TL141', skr_bib: 'TL0141', pop_status: 'cocok' });
+    expect((await imp([U('A', { pop_status: 'x' })])).status).toBe(400);
+    expect((await imp([U('A', { code_unit: 'x'.repeat(61) })])).status).toBe(400);
+    const { code_unit, skr_bib, pop_status, ...lama } = U('A');
+    expect((await imp([lama])).status).toBe(400);
   });
 
   it('validasi impor → 400', async () => {
@@ -127,5 +137,36 @@ describe('admin', () => {
     expect((await lg('abcdefgh')).status).toBe(401);
     expect((await lg('barubaru1')).status).toBe(200);
     expect((await call('GET', '/api/admin/admins', undefined, old)).status).toBe(401);
+  });
+
+  describe('populasi', () => {
+    const P = (c: string, extra = {}) => ({ code_unit: c, skr_bib: `B${c}`, jenis: 'DT', maint: 'PT A', ...extra });
+    const put = (units: unknown) => call('PUT', '/api/admin/populasi', { units });
+
+    it('tanpa sesi → 401', async () => {
+      expect((await call('PUT', '/api/admin/populasi', { units: [] }, null)).status).toBe(401);
+      expect((await call('GET', '/api/admin/populasi', undefined, null)).status).toBe(401);
+    });
+
+    it('kosong → units [] dan uploaded_at null; PUT mengganti total', async () => {
+      expect((await call('GET', '/api/admin/populasi')).body).toEqual({ units: [], uploaded_at: null });
+      expect((await put([P('A1'), P('A2')])).body).toEqual({ count: 2 });
+      const g = (await call('GET', '/api/admin/populasi')).body;
+      expect(g.units).toHaveLength(2);
+      expect(g.units[0]).toEqual(P('A1'));
+      expect(g.uploaded_at).toBe(NOW);
+      await put([P('B1')]);
+      expect((await call('GET', '/api/admin/populasi')).body.units).toEqual([P('B1')]);
+    });
+
+    it('tidak sah → 400 dan data lama utuh', async () => {
+      await put([P('A1')]);
+      const bad = [
+        [P('A2', { maint: 'x'.repeat(61) })], Array.from({ length: 2001 }, (_, i) => P(`C${i}`)),
+        'bukan array', [P('A2'), P('A2')], [P('A2', { skr_bib: '' })], [P('A2', { jenis: 5 })], [null],
+      ];
+      for (const b of bad) expect((await put(b)).status).toBe(400);
+      expect((await call('GET', '/api/admin/populasi')).body.units).toEqual([P('A1')]);
+    });
   });
 });

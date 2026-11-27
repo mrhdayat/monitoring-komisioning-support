@@ -9,7 +9,7 @@ export async function rebuildSnapshot(env: Env, now = Date.now()): Promise<void>
     env.DB.prepare('SELECT id, label, purge_after FROM periods WHERE purged_at IS NULL ORDER BY id'),
     env.DB.prepare(
       `SELECT u.id, u.period_id, u.no_lambung, u.perusahaan, u.kelompok_unit, u.jenis_unit, u.week,
-              u.berlaku_akhir, u.status_she, u.in_latest_upload, p.sisi, p.kode_foto, p.captured_at_device
+              u.berlaku_akhir, u.status_she, u.in_latest_upload, u.code_unit, u.skr_bib, p.sisi, p.kode_foto, p.captured_at_device
        FROM units u JOIN periods r ON r.id = u.period_id LEFT JOIN photos p ON p.unit_id = u.id
        WHERE r.purged_at IS NULL AND u.status_she = 'Belum Diajukan' ORDER BY u.id`,
     ),
