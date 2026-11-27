@@ -2,12 +2,13 @@
 
 Aplikasi foto komisioning unit tambang. Mekanik membuka PWA di HP, memilih unit dari daftar SHE, lalu memotret empat sisi (Depan → Belakang → Kanan → Kiri). Setiap foto diberi watermark jam WITA, tanggal, lokasi GPS, dan Kode Foto. Foto yang dijepret tanpa sinyal disimpan di antrean HP dan terkirim sendiri begitu sinyal kembali. Admin mengunggah Excel SHE, memantau kelengkapan foto per unit, dan mengunduh foto (ZIP) atau rekap Excel. Halaman publik `/` menampilkan progres dan formulir Cek Kode Foto.
 
-Teknologi: React + Vite (PWA) di Cloudflare Workers, database D1, penyimpanan foto R2, dan cron harian untuk retensi.
+Teknologi: React + Vite (PWA) di Cloudflare Workers, database D1, foto disimpan di Google Drive kantor, dan cron harian untuk retensi.
 
 ## Pengembangan lokal
 
 ```sh
 npm install
+cp .dev.vars.example .dev.vars         # STORAGE=d1: foto disimpan di D1 lokal, tanpa Google
 npm run db:local                       # migrasi D1 lokal
 npm run admin:create -- <user> <pass>  # admin pertama (D1 lokal)
 npm run dev                            # http://localhost:5173
@@ -15,26 +16,42 @@ npm run dev                            # http://localhost:5173
 
 - Admin: `/admin/login`. Mekanik: `/` di layar HP (lebar < 1024 px). Di layar lebar, `/` menampilkan halaman publik.
 - Tes: `npm test`. Cek tipe: `npx tsc -b`.
+- Untuk mencoba alur Google Drive di komputer sendiri, ubah `.dev.vars` menjadi `STORAGE=drive` dan tambahkan `GOOGLE_CLIENT_ID=...` dan `GOOGLE_CLIENT_SECRET=...` (isinya dari langkah 2 di bawah). Jangan commit `.dev.vars`.
 
-## Deploy pilot (paket gratis Cloudflare)
+## Deploy
 
-1. Masuk ke akun Cloudflare: `npx wrangler login`.
-2. Buat database dan bucket:
+Database D1 `komisioning` sudah ada di akun Cloudflare kantor (id-nya sudah di `wrangler.jsonc`). R2 tidak dipakai lagi.
+
+1. Masuk ke Cloudflare dan jalankan migrasi (aman diulang):
    ```sh
-   npx wrangler d1 create komisioning
-   npx wrangler r2 bucket create komisioning-foto
-   ```
-3. Salin `database_id` dari keluaran langkah 2 ke `wrangler.jsonc` (ganti `"local"`).
-4. Jalankan migrasi di database Cloudflare:
-   ```sh
+   npx wrangler login
    npx wrangler d1 migrations apply komisioning --remote
    ```
-5. Deploy: `npm run deploy`. Aplikasi ada di `https://komisioning.<akun>.workers.dev`.
-6. Buat admin pertama di database Cloudflare:
+2. Siapkan Google Cloud dengan akun kerja (Google Workspace):
+   1. Buat project baru di console.cloud.google.com.
+   2. Aktifkan **Google Drive API** (APIs & Services, Library).
+   3. Di OAuth consent screen, pilih Audience **Internal**.
+   4. Buat OAuth client, tipe **Web application**, dengan dua Authorized redirect URI:
+      - `https://komisioning.<subdomain>.workers.dev/api/admin/drive/kembali`
+      - `http://localhost:5173/api/admin/drive/kembali`
+
+      `<subdomain>` muncul di keluaran `npm run deploy` (langkah 3), atau di dashboard Cloudflare, Workers & Pages. Kalau belum tahu, deploy dulu, lalu kembali ke sini.
+   5. Catat Client ID dan Client secret.
+3. Deploy: `npm run deploy`. Aplikasi ada di `https://komisioning.<subdomain>.workers.dev`.
+4. Simpan kunci Google di Cloudflare. Tempel nilainya saat diminta, jangan ditulis di file atau chat:
+   ```sh
+   npx wrangler secret put GOOGLE_CLIENT_ID
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   ```
+5. Buat admin pertama (username huruf kecil, `a-z 0-9 . _ -`, 3 sampai 40 karakter):
    ```sh
    npm run admin:create -- <user> <pass> --remote
    ```
-7. Pastikan cron `0 16 * * *` (pukul 00.00 WITA) tercatat di dashboard Worker, bagian Triggers.
+6. Buka aplikasi, login di `/admin/login`, lalu menu **Admin**, tekan **Sambungkan Google Drive** dan setujui akses dengan akun kantor.
+7. Unggah file di menu **Populasi**, lalu impor Excel SHE.
+8. Pastikan cron `0 16 * * *` (pukul 00.00 WITA) tercatat di dashboard Worker, bagian Triggers.
+
+Di alamat `*.workers.dev`, cache Cloudflare tidak aktif, jadi setiap HP mengambil foto dari Drive saat pertama kali membukanya. Dengan domain sendiri, foto di-cache.
 
 Admin berikutnya bisa ditambah dari menu **Admin** di aplikasi.
 
@@ -51,8 +68,8 @@ Password lama tetap berlaku. Saat admin login berikutnya, hash-nya otomatis dibu
 
 ## Retensi foto
 
-- Foto suatu periode dihapus otomatis pada akhir bulan berikutnya. Contoh: foto periode Des/2026 dihapus pada akhir Januari 2027. Penghapusan dijalankan cron harian pukul 00.00 WITA.
-- Yang dihapus hanya berkas foto di R2 dan baris fotonya. Data unit tetap disimpan.
+- Foto suatu periode dibuang otomatis pada akhir bulan berikutnya. Contoh: foto periode Des/2026 dihapus pada akhir Januari 2027. Prosesnya dijalankan cron harian pukul 00.00 WITA.
+- Foto periode itu dipindahkan ke Sampah Google Drive (folder `Komisioning/<periode>`) dan baris fotonya dihapus. Google mengosongkan Sampah setelah 30 hari. Data unit tetap disimpan.
 - Mulai H-7, dashboard admin menampilkan peringatan "Foto periode X akan dihapus dalam n hari, unduh sekarang".
 - Upload ulang Excel periode yang sama tidak menghapus foto. Unit yang tidak ada lagi di file hanya disembunyikan dari daftar mekanik.
 
@@ -60,3 +77,4 @@ Password lama tetap berlaku. Saat admin login berikutnya, hash-nya otomatis dibu
 
 - Spesifikasi: `docs/superpowers/specs/2026-11-21-monitoring-komisioning-design.md`
 - Rencana implementasi: `docs/superpowers/plans/2026-11-21-monitoring-komisioning.md`
+- Foto di Google Drive: `docs/superpowers/specs/2026-11-27-penyimpanan-google-drive-design.md` dan `docs/superpowers/plans/2026-11-27-penyimpanan-google-drive.md`
