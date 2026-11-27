@@ -1,3 +1,4 @@
+import { driveStore } from './drive';
 import type { Env } from './http';
 
 export interface Store {
@@ -28,9 +29,13 @@ export const d1Store = (db: D1Database): Store => ({
   },
 });
 
-// null = produksi tanpa Drive tersambung. ponytail: cabang 'drive' ditambah Task 2.
-export async function getStore(env: Env, _fetchImpl: typeof fetch = fetch): Promise<Store | null> {
-  return env.STORAGE === 'd1' ? d1Store(env.DB) : null;
+// null = produksi tanpa Drive tersambung (belum ada refresh token, atau izin dicabut: drive_status = 'terputus').
+export async function getStore(env: Env, fetchImpl: typeof fetch = fetch): Promise<Store | null> {
+  if (env.STORAGE === 'd1') return d1Store(env.DB);
+  if (env.STORAGE !== 'drive' || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return null;
+  const { results } = await env.DB.prepare("SELECT k, v FROM pengaturan WHERE k IN ('drive_refresh_token', 'drive_status')").all<{ k: string; v: string }>();
+  const s = Object.fromEntries(results.map((r) => [r.k, r.v]));
+  return s.drive_refresh_token && s.drive_status !== 'terputus' ? driveStore(env, fetchImpl) : null;
 }
 
 export const fileName = (label: string, sisi: string, kode: string) =>

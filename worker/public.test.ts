@@ -65,6 +65,16 @@ describe('public', () => {
     expect((await SELF.fetch('https://x/api/photo/bad')).status).toBe(404);
   });
 
+  it('photo: respons 200 masuk cache tepi dan dilayani ulang tanpa store', async () => {
+    await env.DB.prepare("INSERT INTO berkas_dev (id, data) VALUES ('foto/AB1C-D2EF.jpg', x'ffd8ff')").run();
+    const url = 'https://x/api/photo/AB1C-D2EF?cache-uji=1';
+    expect((await SELF.fetch(url)).status).toBe(200);
+    await env.DB.prepare('DELETE FROM berkas_dev').run();
+    const r = await SELF.fetch(url);
+    expect(r.status).toBe(200);
+    expect(new Uint8Array(await r.arrayBuffer())).toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+  });
+
   it('geocode: cache hit & param invalid', async () => {
     await env.DB.prepare("INSERT INTO geocache (key,address,created_at) VALUES ('-1.234,116.500','Jl. Tes',1)").run();
     const r = await SELF.fetch('https://x/api/geocode?lat=-1.2341&lon=116.5003');

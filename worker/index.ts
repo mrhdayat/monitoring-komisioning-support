@@ -13,7 +13,7 @@ export default {
     if (m) {
       let kode = m[2];
       try { kode = decodeURIComponent(kode); } catch { /* ditolak normalizeKode */ }
-      return m[1] === 'photo' ? getPhoto(kode, env) : checkKode(kode, env);
+      return m[1] === 'photo' ? getPhoto(req, kode, env, ctx) : checkKode(kode, env);
     }
     switch (pathname) {
       case '/api/snapshot':

@@ -1,5 +1,7 @@
 export interface Env {
-  DB: D1Database; ASSETS: Fetcher; STORAGE: string; // 'drive' (produksi) | 'd1' (dev, tes) GOOGLE_CLIENT_ID?: string; GOOGLE_CLIENT_SECRET?: string;
+  DB: D1Database; ASSETS: Fetcher;
+  STORAGE: string; // 'drive' (produksi) | 'd1' (dev, tes)
+  GOOGLE_CLIENT_ID?: string; GOOGLE_CLIENT_SECRET?: string;
 }
 
 export const json = (data: unknown, status = 200, headers?: HeadersInit): Response =>

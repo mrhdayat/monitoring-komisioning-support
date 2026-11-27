@@ -1,6 +1,7 @@
 import { KODE_RE } from '../shared/kode';
 import { clockOff, expiryEndMs } from '../shared/rules';
 import { SISI, type PhotoMeta } from '../shared/types';
+import { DriveDisconnected } from './drive';
 import { err, json, type Env } from './http';
 import { unitLabel } from '../shared/populasi';
 import { rebuildSnapshot } from './snapshot';
@@ -61,7 +62,13 @@ export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext
   // Store null (produksi tanpa Drive): 503, foto tetap di antrean HP.
   const store = await getStore(env);
   if (!store) return err('penyimpanan_belum_siap', 503);
-  const key = await store.put({ name: fileName(unitLabel(unit), m.sisi, m.kode), periodId: unit.period_id, bytes: new Uint8Array(buf) });
+  let key: string;
+  try {
+    key = await store.put({ name: fileName(unitLabel(unit), m.sisi, m.kode), periodId: unit.period_id, bytes: new Uint8Array(buf) });
+  } catch (e) {
+    if (e instanceof DriveDisconnected) return err('penyimpanan_belum_siap', 503); // izin dicabut saat upload; status sudah 'terputus'
+    throw e;
+  }
 
   // 6. Pemenang ditentukan atomik: baca foto lama + upsert dalam satu batch (satu transaksi D1).
   const [old, up] = await env.DB.batch<{ kode_foto: string; r2_key: string }>([
