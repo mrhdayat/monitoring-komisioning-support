@@ -68,6 +68,9 @@ describe('admin', () => {
     expect(body.units[0]).toMatchObject({ code_unit: 'TL141', skr_bib: 'TL0141', pop_status: 'cocok' });
     expect((await imp([U('A', { pop_status: 'x' })])).status).toBe(400);
     expect((await imp([U('A', { code_unit: 'x'.repeat(61) })])).status).toBe(400);
+    expect((await imp([U('A', { pop_status: 'cocok', code_unit: null })])).status).toBe(400);
+    expect((await imp([U('A', { pop_status: 'ganda', code_unit: 'X1' })])).status).toBe(400);
+    expect((await imp([U('A', { pop_status: 'tidak_ada', skr_bib: 'X1' })])).status).toBe(400);
     const { code_unit, skr_bib, pop_status, ...lama } = U('A');
     expect((await imp([lama])).status).toBe(400);
   });
@@ -159,11 +162,23 @@ describe('admin', () => {
       expect((await call('GET', '/api/admin/populasi')).body.units).toEqual([P('B1')]);
     });
 
+    it('skr_bib/jenis/maint kosong boleh', async () => {
+      expect((await put([P('A1', { skr_bib: '', jenis: '', maint: '' })])).body).toEqual({ count: 1 });
+      expect((await call('GET', '/api/admin/populasi')).body.units).toEqual([P('A1', { skr_bib: '', jenis: '', maint: '' })]);
+    });
+
+    it('2000 baris sekaligus', async () => {
+      const t = performance.now();
+      expect((await put(Array.from({ length: 2000 }, (_, i) => P(`C${i}`)))).body).toEqual({ count: 2000 });
+      console.log('PUT 2000 baris ms:', Math.round(performance.now() - t));
+      expect((await call('GET', '/api/admin/populasi')).body.units).toHaveLength(2000);
+    });
+
     it('tidak sah → 400 dan data lama utuh', async () => {
       await put([P('A1')]);
       const bad = [
         [P('A2', { maint: 'x'.repeat(61) })], Array.from({ length: 2001 }, (_, i) => P(`C${i}`)),
-        'bukan array', [P('A2'), P('A2')], [P('A2', { skr_bib: '' })], [P('A2', { jenis: 5 })], [null],
+        'bukan array', [P('A2'), P('A2')], [P('A2', { code_unit: ' ' })], [P('A2', { jenis: 5 })], [null],
       ];
       for (const b of bad) expect((await put(b)).status).toBe(400);
       expect((await call('GET', '/api/admin/populasi')).body.units).toEqual([P('A1')]);

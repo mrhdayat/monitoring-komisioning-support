@@ -14,10 +14,12 @@ const txt = (v: unknown): v is string => str(v) && v.length <= 60;
 const txtOrNull = (v: unknown) => v === null || txt(v);
 const validUnit = (u: any) =>
   u && typeof u === 'object' && FIELDS.every((f) => str(u[f])) && /^\d{4}-\d{2}-\d{2}$/.test(u.berlaku_akhir)
-  && txtOrNull(u.code_unit) && txtOrNull(u.skr_bib) && ['cocok', 'ganda', 'tidak_ada'].includes(u.pop_status);
+  && txtOrNull(u.code_unit) && txtOrNull(u.skr_bib) && ['cocok', 'ganda', 'tidak_ada'].includes(u.pop_status)
+  && (u.pop_status === 'cocok' ? u.code_unit !== null : u.code_unit === null && u.skr_bib === null);
 
 const POP_MAX = 2000;
-const POP_FIELDS = ['code_unit', 'skr_bib', 'jenis', 'maint'] as const;
+const POP_BLANK_OK = ['skr_bib', 'jenis', 'maint'] as const; // kosong boleh, satu sel kosong tak boleh menggagalkan unggahan
+const POP_ROWS = 20; // 5 parameter per baris x 20 = 100, batas parameter D1
 
 async function getPopulasi(env: Env) {
   const { results } = await env.DB.prepare('SELECT code_unit, skr_bib, jenis, maint, uploaded_at FROM populasi ORDER BY code_unit').all<any>();
@@ -27,15 +29,18 @@ async function getPopulasi(env: Env) {
 async function putPopulasi(req: Request, env: Env, now: number) {
   const b = await readJson<any>(req);
   if (!b || !Array.isArray(b.units) || b.units.length > POP_MAX
-    || !b.units.every((u: any) => u && typeof u === 'object' && POP_FIELDS.every((f) => txt(u[f])))
+    || !b.units.every((u: any) => u && typeof u === 'object' && txt(u.code_unit)
+      && POP_BLANK_OK.every((f) => typeof u[f] === 'string' && u[f].length <= 60))
     || new Set(b.units.map((u: any) => u.code_unit)).size !== b.units.length) return err('invalid', 400);
-  // Satu batch: murah di CPU paket gratis, dan atomik (gagal = tabel lama utuh).
-  await env.DB.batch([
-    env.DB.prepare('DELETE FROM populasi'),
-    ...b.units.map((u: Record<string, string>) =>
-      env.DB.prepare('INSERT INTO populasi (code_unit, skr_bib, jenis, maint, uploaded_at) VALUES (?, ?, ?, ?, ?)')
-        .bind(u.code_unit, u.skr_bib, u.jenis, u.maint, now)),
-  ]);
+  // Satu batch, INSERT multi-baris: sedikit statement = hemat CPU paket gratis, dan atomik (gagal = tabel lama utuh).
+  const stmts = [env.DB.prepare('DELETE FROM populasi')];
+  for (let i = 0; i < b.units.length; i += POP_ROWS) {
+    const rows = b.units.slice(i, i + POP_ROWS);
+    stmts.push(env.DB.prepare(
+      `INSERT INTO populasi (code_unit, skr_bib, jenis, maint, uploaded_at) VALUES ${rows.map(() => '(?, ?, ?, ?, ?)').join(', ')}`,
+    ).bind(...rows.flatMap((u: Record<string, string>) => [u.code_unit, u.skr_bib, u.jenis, u.maint, now])));
+  }
+  await env.DB.batch(stmts);
   return json({ count: b.units.length });
 }
 
