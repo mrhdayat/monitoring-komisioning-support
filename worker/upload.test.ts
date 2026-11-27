@@ -32,7 +32,12 @@ async function call(req: Request, now = NOW) {
 
 const rows = async () =>
   (await env.DB.prepare('SELECT * FROM photos ORDER BY id').all<Record<string, any>>()).results;
-const inR2 = async (kode: string) => (await env.PHOTOS.head(`foto/${kode}.jpg`)) !== null;
+// Berkas milik kode ini ada? (r2_key = id berkas_dev). Kode yang barisnya sudah tak ada → cek lewat jumlah berkas.
+const inStore = async (kode: string) => {
+  const r = await env.DB.prepare('SELECT 1 x FROM photos p JOIN berkas_dev b ON b.id = p.r2_key WHERE p.kode_foto = ?').bind(kode).first();
+  return r !== null;
+};
+const files = async () => (await env.DB.prepare('SELECT COUNT(*) c FROM berkas_dev').first<{ c: number }>())!.c;
 
 beforeEach(async () => {
   await env.DB.batch([
@@ -42,27 +47,36 @@ beforeEach(async () => {
     env.DB.prepare("INSERT INTO units (id,period_id,no_lambung,perusahaan,kelompok_unit,jenis_unit,berlaku_akhir,week,status_she) VALUES (1,1,'DT 4464','PT A','K','DT','2027-01-01','W1','Belum Diajukan')"),
     env.DB.prepare("INSERT INTO units (id,period_id,no_lambung,perusahaan,kelompok_unit,jenis_unit,berlaku_akhir,week,status_she) VALUES (2,2,'DT 9','PT A','K','DT','2027-01-01','W1','Belum Diajukan')"),
   ]);
-  const list = await env.PHOTOS.list();
-  if (list.objects.length) await env.PHOTOS.delete(list.objects.map((o) => o.key));
+  await env.DB.batch([env.DB.prepare('DELETE FROM berkas_dev'), env.DB.prepare('DELETE FROM snapshot')]);
 });
 
 describe('upload', () => {
   it('foto pertama → dipakai, berkas ada di R2', async () => {
     expect(await send({})).toEqual({ status: 200, body: { result: 'dipakai' } });
-    expect(await inR2('AAAA-0001')).toBe(true);
+    expect(await inStore('AAAA-0001')).toBe(true);
     const [r] = await rows();
     expect(r).toMatchObject({
-      unit_id: 1, sisi: 'kanan', kode_foto: 'AAAA-0001', r2_key: 'foto/AAAA-0001.jpg', received_at_server: NOW,
+      unit_id: 1, sisi: 'kanan', kode_foto: 'AAAA-0001', r2_key: expect.any(String), received_at_server: NOW,
       clock_offset_s: 0, mekanik_nama: 'Budi', mekanik_nrp: '123', flags: '', lat: -1.2, address: 'Jl. Tes',
     });
-    expect(await env.PHOTOS.head('snapshot.json')).not.toBeNull();
+    expect(await env.DB.prepare('SELECT 1 x FROM snapshot').first()).not.toBeNull();
+  });
+
+  it('Store null (produksi tanpa Drive) → 503, tidak ada baris', async () => {
+    const req = new Request('https://x/api/photos', {
+      method: 'POST', body: JPEG, headers: { 'X-Foto-Meta': metaOf({}), 'Content-Length': String(JPEG.byteLength) },
+    });
+    const res = await handleUpload(req, { ...env, STORAGE: 'drive' } as Env, createExecutionContext(), NOW);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'penyimpanan_belum_siap' });
+    expect(await rows()).toHaveLength(0);
   });
 
   it('kode sama, unit+sisi+jam sama → duplikat', async () => {
     await send({});
     expect(await send({})).toEqual({ status: 200, body: { result: 'duplikat' } });
     expect(await rows()).toHaveLength(1);
-    expect(await inR2('AAAA-0001')).toBe(true);
+    expect(await inStore('AAAA-0001')).toBe(true);
   });
 
   it('kode sama, isi beda → 409 kode_bentrok', async () => {
@@ -73,7 +87,7 @@ describe('upload', () => {
 
   it('unit tidak ada → 422 unit_tidak_berlaku', async () => {
     expect(await send({ unitId: 999 })).toEqual({ status: 422, body: { error: 'unit_tidak_berlaku' } });
-    expect(await inR2('AAAA-0001')).toBe(false);
+    expect(await inStore('AAAA-0001')).toBe(false);
   });
 
   it('periode sudah dihapus → 422 unit_tidak_berlaku', async () => {
@@ -83,7 +97,7 @@ describe('upload', () => {
   it('jepret lewat expired → 422 lewat_expired', async () => {
     const now = WITA('2027-01-02T00:00:01');
     expect(await send({ capturedAt: now, deviceNow: now }, now)).toEqual({ status: 422, body: { error: 'lewat_expired' } });
-    expect(await inR2('AAAA-0001')).toBe(false);
+    expect(await inStore('AAAA-0001')).toBe(false);
   });
 
   it('jepret sebelum expired, terkirim sesudahnya → diterima', async () => {
@@ -106,24 +120,27 @@ describe('upload', () => {
     expect(await send({ kode: 'BBBB-0002', capturedAt: WITA('2026-12-01T10:00:00') }))
       .toEqual({ status: 200, body: { result: 'dipakai' } });
     expect((await rows()).map((r) => r.kode_foto)).toEqual(['BBBB-0002']);
-    expect(await inR2('AAAA-0001')).toBe(false);
-    expect(await inR2('BBBB-0002')).toBe(true);
+    expect(await inStore('AAAA-0001')).toBe(false);
+    expect(await inStore('BBBB-0002')).toBe(true);
+    expect(await files()).toBe(1);
   });
 
   it('foto lebih lama → lebih_baru_ada, berkas baru dihapus', async () => {
     await send({ kode: 'BBBB-0002', capturedAt: WITA('2026-12-01T10:00:00') });
     expect(await send({})).toEqual({ status: 200, body: { result: 'lebih_baru_ada' } });
     expect((await rows()).map((r) => r.kode_foto)).toEqual(['BBBB-0002']);
-    expect(await inR2('AAAA-0001')).toBe(false);
-    expect(await inR2('BBBB-0002')).toBe(true);
+    expect(await inStore('AAAA-0001')).toBe(false);
+    expect(await inStore('BBBB-0002')).toBe(true);
+    expect(await files()).toBe(1);
   });
 
   it('jam sama → foto lama dipertahankan', async () => {
     await send({});
     expect(await send({ kode: 'BBBB-0002' })).toEqual({ status: 200, body: { result: 'lebih_baru_ada' } });
     expect((await rows()).map((r) => r.kode_foto)).toEqual(['AAAA-0001']);
-    expect(await inR2('AAAA-0001')).toBe(true);
-    expect(await inR2('BBBB-0002')).toBe(false);
+    expect(await inStore('AAAA-0001')).toBe(true);
+    expect(await inStore('BBBB-0002')).toBe(false);
+    expect(await files()).toBe(1);
   });
 
   it('kiriman ganda bersamaan tidak menghapus foto aktif', async () => {
@@ -131,7 +148,8 @@ describe('upload', () => {
     for (const r of res) expect(r.status).toBe(200);
     expect(res.map((r) => r.body.result).sort()).toEqual(['dipakai', 'duplikat']);
     expect(await rows()).toHaveLength(1);
-    expect(await inR2('AAAA-0001')).toBe(true);
+    expect(await inStore('AAAA-0001')).toBe(true);
+    expect(await files()).toBe(1);
   });
 
   it('tanpa GPS → flag gps', async () => {

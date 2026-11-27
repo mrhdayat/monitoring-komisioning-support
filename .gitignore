@@ -8,3 +8,4 @@ dist/
 .wrangler/
 graphify-out/
 *.tsbuildinfo
+.dev.vars

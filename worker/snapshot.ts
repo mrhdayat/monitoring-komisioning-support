@@ -1,8 +1,6 @@
 import type { Sisi, Snapshot, SnapUnit } from '../shared/types';
 import type { Env } from './http';
 
-export const SNAPSHOT_KEY = 'snapshot.json';
-
 // ponytail: rebuild bersamaan bisa menulis snapshot sedikit tertinggal; rebuild berikutnya membetulkan.
 export async function rebuildSnapshot(env: Env, now = Date.now()): Promise<void> {
   const [periods, rows] = await env.DB.batch([
@@ -28,5 +26,7 @@ export async function rebuildSnapshot(env: Env, now = Date.now()): Promise<void>
     periods: periods.results as Snapshot['periods'],
     units: [...units.values()],
   };
-  await env.PHOTOS.put(SNAPSHOT_KEY, JSON.stringify(snap), { httpMetadata: { contentType: 'application/json' } });
+  await env.DB.prepare(
+    'INSERT INTO snapshot (id, json, version) VALUES (1, ?, ?) ON CONFLICT (id) DO UPDATE SET json = excluded.json, version = excluded.version',
+  ).bind(JSON.stringify(snap), now).run();
 }

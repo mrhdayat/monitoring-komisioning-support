@@ -1,9 +1,10 @@
 {
   "name": "komisioning",
+  "account_id": "0908f936a1b301f8d0ba9c85c65c33ad",
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-01",
   "assets": { "binding": "ASSETS", "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "komisioning", "database_id": "local", "migrations_dir": "migrations" }],
-  "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "komisioning-foto" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "komisioning", "database_id": "a9540d35-2b45-4e93-b3a4-134c68d3642b", "migrations_dir": "migrations" }],
+  "vars": { "STORAGE": "drive" },
   "triggers": { "crons": ["0 16 * * *"] } // 00:00 WITA
 }

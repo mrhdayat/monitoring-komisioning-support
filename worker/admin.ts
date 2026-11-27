@@ -3,6 +3,7 @@ import { adminStatus, purgeAfterMs } from '../shared/rules';
 import { hashPassword, requireAdmin } from './auth';
 import { err, json, readJson, type Env } from './http';
 import { rebuildSnapshot } from './snapshot';
+import { getStore } from './store';
 
 const FIELDS = ['no_lambung', 'perusahaan', 'kelompok_unit', 'jenis_unit', 'berlaku_akhir', 'week', 'status_she'] as const;
 const str = (v: unknown): v is string => typeof v === 'string' && v.trim() !== '';
@@ -110,7 +111,7 @@ async function listUnits(env: Env, now: number) {
 async function deletePhoto(kode: string, env: Env, now: number) {
   const r = await env.DB.prepare('SELECT id, r2_key FROM photos WHERE kode_foto = ?').bind(kode).first<{ id: number; r2_key: string }>();
   if (!r) return err('not_found', 404);
-  await env.PHOTOS.delete(r.r2_key);
+  await (await getStore(env))?.del([r.r2_key]);
   await env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(r.id).run();
   await rebuildSnapshot(env, now);
   return json({ ok: true });

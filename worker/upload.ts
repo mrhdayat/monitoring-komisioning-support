@@ -2,7 +2,9 @@ import { KODE_RE } from '../shared/kode';
 import { clockOff, expiryEndMs } from '../shared/rules';
 import { SISI, type PhotoMeta } from '../shared/types';
 import { err, json, type Env } from './http';
+import { unitLabel } from '../shared/populasi';
 import { rebuildSnapshot } from './snapshot';
+import { fileName, getStore } from './store';
 
 const MAX_BYTES = 2_097_152;
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -42,8 +44,8 @@ export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext
 
   // 3. Unit ada & periodenya belum dihapus retensi?
   const unit = await env.DB.prepare(
-    'SELECT u.berlaku_akhir FROM units u JOIN periods p ON p.id = u.period_id WHERE u.id = ? AND p.purged_at IS NULL',
-  ).bind(m.unitId).first<{ berlaku_akhir: string }>();
+    'SELECT u.berlaku_akhir, u.code_unit, u.no_lambung, u.period_id FROM units u JOIN periods p ON p.id = u.period_id WHERE u.id = ? AND p.purged_at IS NULL',
+  ).bind(m.unitId).first<{ berlaku_akhir: string; code_unit: string | null; no_lambung: string; period_id: number }>();
   if (!unit) return err('unit_tidak_berlaku', 422);
 
   // 4. Koreksi jam & expired.
@@ -56,12 +58,14 @@ export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext
   const flags = [(clockOff(offset) || future) && 'jam', (m.lat === null || m.lon === null) && 'gps'].filter(Boolean).join(',');
 
   // 5. Simpan berkas.
-  const key = `foto/${m.kode}.jpg`;
-  await env.PHOTOS.put(key, buf, { httpMetadata: { contentType: 'image/jpeg' } });
+  // Store null (produksi tanpa Drive): 503, foto tetap di antrean HP.
+  const store = await getStore(env);
+  if (!store) return err('penyimpanan_belum_siap', 503);
+  const key = await store.put({ name: fileName(unitLabel(unit), m.sisi, m.kode), periodId: unit.period_id, bytes: new Uint8Array(buf) });
 
   // 6. Pemenang ditentukan atomik: baca foto lama + upsert dalam satu batch (satu transaksi D1).
-  const [old, up] = await env.DB.batch<{ kode_foto: string }>([
-    env.DB.prepare('SELECT kode_foto FROM photos WHERE unit_id = ? AND sisi = ?').bind(m.unitId, m.sisi),
+  const [old, up] = await env.DB.batch<{ kode_foto: string; r2_key: string }>([
+    env.DB.prepare('SELECT kode_foto, r2_key FROM photos WHERE unit_id = ? AND sisi = ?').bind(m.unitId, m.sisi),
     env.DB.prepare(
       `INSERT INTO photos (unit_id, sisi, kode_foto, r2_key, captured_at_device, captured_at_corrected,
          received_at_server, clock_offset_s, lat, lon, accuracy_m, address, mekanik_nama, mekanik_nrp, flags)
@@ -77,12 +81,13 @@ export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext
       m.lat, m.lon, m.accuracy, m.address, m.nama.trim(), m.nrp.trim(), flags),
   ]);
   const oldKode = old.results[0]?.kode_foto;
+  const oldKey = old.results[0]?.r2_key;
   if (up.results.length) {
-    if (oldKode && oldKode !== m.kode) await env.PHOTOS.delete(`foto/${oldKode}.jpg`);
+    if (oldKey && oldKey !== key) await store.del([oldKey]);
     ctx.waitUntil(rebuildSnapshot(env));
     return json({ result: 'dipakai' });
   }
-  if (oldKode === m.kode) return json({ result: 'duplikat' }); // kiriman ganda bersamaan: berkas = milik foto aktif
-  await env.PHOTOS.delete(key);
+  await store.del([key]);
+  if (oldKode === m.kode) return json({ result: 'duplikat' }); // kiriman ganda bersamaan: berkas baru dibuang, foto aktif tetap
   return json({ result: 'lebih_baru_ada' });
 }

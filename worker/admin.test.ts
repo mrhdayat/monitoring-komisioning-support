@@ -27,8 +27,7 @@ beforeEach(async () => {
   await E.DB.prepare('INSERT INTO admins (username, password_hash, created_at) VALUES (?, ?, 1)').bind('budi', await hashPassword('rahasia123')).run();
   const r = await login(new Request('https://x/l', { method: 'POST', body: JSON.stringify({ username: 'budi', password: 'rahasia123' }), headers: { 'content-type': 'application/json' } }), E, NOW);
   cookie = r.headers.get('set-cookie')!.split(';')[0];
-  const list = await E.PHOTOS.list();
-  if (list.objects.length) await E.PHOTOS.delete(list.objects.map((o) => o.key));
+  await E.DB.batch([E.DB.prepare('DELETE FROM berkas_dev'), E.DB.prepare('DELETE FROM snapshot')]);
 });
 
 describe('admin', () => {
@@ -47,7 +46,7 @@ describe('admin', () => {
     const p = await E.DB.prepare('SELECT * FROM periods').first<any>();
     expect(p).toMatchObject({ label: 'Des/2026', uploaded_at: NOW, import_id: 'i1' });
     expect(p.purge_after).toBeGreaterThan(NOW);
-    expect(await E.PHOTOS.head('snapshot.json')).not.toBeNull();
+    expect(await E.DB.prepare('SELECT 1 x FROM snapshot').first()).not.toBeNull();
   });
 
   it('impor ulang tanpa unit X → X tersembunyi, foto X tetap', async () => {
@@ -102,11 +101,11 @@ describe('admin', () => {
     await imp([U('A 1')]);
     const u = await E.DB.prepare('SELECT id FROM units').first<{ id: number }>();
     await photo(u!.id, 'depan', 'AAAA-0001');
-    await E.PHOTOS.put('foto/AAAA-0001.jpg', new Uint8Array([1]));
+    await E.DB.prepare("INSERT INTO berkas_dev (id, data) VALUES ('foto/AAAA-0001.jpg', x'01')").run();
     expect((await call('DELETE', '/api/admin/photo/AAAA-0001')).body).toEqual({ ok: true });
-    expect(await E.PHOTOS.head('foto/AAAA-0001.jpg')).toBeNull();
+    expect(await E.DB.prepare('SELECT 1 x FROM berkas_dev').first()).toBeNull();
     expect((await E.DB.prepare('SELECT COUNT(*) n FROM photos').first<any>()).n).toBe(0);
-    const snap = await (await E.PHOTOS.get('snapshot.json'))!.json<any>();
+    const snap = JSON.parse((await E.DB.prepare('SELECT json FROM snapshot').first<{ json: string }>())!.json);
     expect(snap.units[0].sides).toEqual({});
     expect((await call('DELETE', '/api/admin/photo/AAAA-0001')).status).toBe(404);
   });

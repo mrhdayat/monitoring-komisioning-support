@@ -16,7 +16,7 @@ beforeEach(async () => {
     env.DB.prepare("INSERT INTO units (id,period_id,no_lambung,perusahaan,kelompok_unit,jenis_unit,berlaku_akhir,week,status_she) VALUES (3,2,'DT 9','PT A','K','DT','2026-12-31','W1','Belum Diajukan')"),
     env.DB.prepare("INSERT INTO photos (unit_id,sisi,kode_foto,r2_key,captured_at_device,captured_at_corrected,received_at_server,clock_offset_s,mekanik_nama,mekanik_nrp) VALUES (1,'depan','AB1C-D2EF','foto/AB1C-D2EF.jpg',1000,1000,2000,0,'Budi','123')"),
   ]);
-  await env.PHOTOS.delete('snapshot.json');
+  await env.DB.batch([env.DB.prepare('DELETE FROM snapshot'), env.DB.prepare('DELETE FROM berkas_dev')]);
 });
 
 describe('public', () => {
@@ -26,6 +26,7 @@ describe('public', () => {
     const r1 = await SELF.fetch('https://x/api/snapshot');
     expect(r1.headers.get('Cache-Control')).toBe('no-cache');
     const s = await r1.json<Snapshot>();
+    expect(r1.headers.get('ETag')).toBe(`"${s.version}"`);
     expect(s.units.map((u) => u.no_lambung)).toEqual(['DT 4464']);
     expect(s.units[0].in_latest_upload).toBe(true);
     expect(s.units[0]).toMatchObject({ code_unit: 'DT44', skr_bib: 'DT0044' });
@@ -54,7 +55,7 @@ describe('public', () => {
   });
 
   it('photo: JPEG immutable, 404 bila tak ada/invalid', async () => {
-    await env.PHOTOS.put('foto/AB1C-D2EF.jpg', new Uint8Array([0xff, 0xd8, 0xff]));
+    await env.DB.prepare("INSERT INTO berkas_dev (id, data) VALUES ('foto/AB1C-D2EF.jpg', x'ffd8ff')").run();
     const r = await SELF.fetch('https://x/api/photo/ab1c-d2ef');
     expect(r.status).toBe(200);
     expect(r.headers.get('content-type')).toBe('image/jpeg');

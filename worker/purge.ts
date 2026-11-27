@@ -1,32 +1,22 @@
 import type { Env } from './http';
 import { rebuildSnapshot } from './snapshot';
+import { getStore } from './store';
 
-const CHUNK = 1000;
-
-// ponytail: per run maksimal 40 batch delete R2 (≤ 50 subrequest); sisanya diproses run berikutnya.
-export async function purgeExpired(env: Env, now: number, maxCalls = 40): Promise<{ periods: number; photos: number }> {
+// ponytail: per run maksimal `maxPeriods` periode (tiap periode ≈ 4 subrequest, batas 50); sisanya diproses run berikutnya.
+export async function purgeExpired(env: Env, now: number, maxPeriods = 10): Promise<{ periods: number; photos: number }> {
   const { results: periods } = await env.DB.prepare(
-    'SELECT id FROM periods WHERE purged_at IS NULL AND purge_after < ? ORDER BY id',
-  ).bind(now).all<{ id: number }>();
-  let calls = 0, done = 0, photos = 0;
+    'SELECT id FROM periods WHERE purged_at IS NULL AND purge_after < ? ORDER BY id LIMIT ?',
+  ).bind(now, maxPeriods).all<{ id: number }>();
+  if (!periods.length) return { periods: 0, photos: 0 };
+  const store = await getStore(env);
+  if (!store) return { periods: 0, photos: 0 }; // Drive belum tersambung: coba lagi besok, jangan tandai purged.
+  let photos = 0;
   for (const { id } of periods) {
-    if (calls >= maxCalls) break;
-    const { results } = await env.DB.prepare(
-      'SELECT id, r2_key FROM photos WHERE unit_id IN (SELECT id FROM units WHERE period_id = ?) ORDER BY id LIMIT ?',
-    ).bind(id, (maxCalls - calls) * CHUNK + 1).all<{ id: number; r2_key: string }>();
-    const rows = results.slice(0, (maxCalls - calls) * CHUNK);
-    for (let i = 0; i < rows.length; i += CHUNK, calls++) {
-      await env.PHOTOS.delete(rows.slice(i, i + CHUNK).map((r) => r.r2_key));
-    }
-    if (rows.length) {
-      await env.DB.prepare('DELETE FROM photos WHERE unit_id IN (SELECT id FROM units WHERE period_id = ?) AND id <= ?')
-        .bind(id, rows[rows.length - 1].id).run();
-      photos += rows.length;
-    }
-    if (rows.length < results.length) break; // masih ada foto: purged_at tetap NULL
+    await store.trashPeriod(id);
+    const r = await env.DB.prepare('DELETE FROM photos WHERE unit_id IN (SELECT id FROM units WHERE period_id = ?)').bind(id).run();
+    photos += r.meta.changes;
     await env.DB.prepare('UPDATE periods SET purged_at = ? WHERE id = ?').bind(now, id).run();
-    done++;
   }
-  if (done) await rebuildSnapshot(env, now);
-  return { periods: done, photos };
+  await rebuildSnapshot(env, now);
+  return { periods: periods.length, photos };
 }

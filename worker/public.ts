@@ -1,27 +1,30 @@
 import { normalizeKode } from '../shared/kode';
 import { err, json, type Env } from './http';
-import { rebuildSnapshot, SNAPSHOT_KEY } from './snapshot';
+import { rebuildSnapshot } from './snapshot';
+import { getStore } from './store';
+
+const readSnap = (env: Env) => env.DB.prepare('SELECT json, version FROM snapshot WHERE id = 1').first<{ json: string; version: number }>();
 
 export async function getSnapshot(req: Request, env: Env): Promise<Response> {
-  let obj = await env.PHOTOS.head(SNAPSHOT_KEY);
-  if (!obj) {
+  let row = await readSnap(env);
+  if (!row) {
     await rebuildSnapshot(env);
-    obj = await env.PHOTOS.head(SNAPSHOT_KEY);
-    if (!obj) return err('not_found', 404);
+    row = await readSnap(env);
+    if (!row) return err('not_found', 404);
   }
-  const headers = { ETag: obj.httpEtag, 'Cache-Control': 'no-cache', 'content-type': 'application/json' };
+  const etag = `"${row.version}"`;
+  const headers = { ETag: etag, 'Cache-Control': 'no-cache', 'content-type': 'application/json' };
   const inm = req.headers.get('If-None-Match');
-  if (inm && inm.split(',').some((t) => t.trim().replace(/^W\//, '') === obj!.httpEtag)) {
+  if (inm && inm.split(',').some((t) => t.trim().replace(/^W\//, '') === etag)) {
     return new Response(null, { status: 304, headers });
   }
-  const body = await env.PHOTOS.get(SNAPSHOT_KEY);
-  // ponytail: bila rebuild menimpa di antara head dan get, ETag header bisa tertinggal satu versi; klien hanya memuat ulang.
-  return body ? new Response(body.body, { headers: { ...headers, ETag: body.httpEtag } }) : err('not_found', 404);
+  return new Response(row.json, { headers });
 }
 
 export async function getPhoto(kode: string, env: Env): Promise<Response> {
   const k = normalizeKode(kode);
-  const obj = k && (await env.PHOTOS.get(`foto/${k}.jpg`));
+  const row = k && (await env.DB.prepare('SELECT r2_key FROM photos WHERE kode_foto = ?').bind(k).first<{ r2_key: string }>());
+  const obj = row && (await (await getStore(env))?.get(row.r2_key));
   if (!obj) return err('not_found', 404);
   return new Response(obj.body, {
     headers: { 'content-type': 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable' },
