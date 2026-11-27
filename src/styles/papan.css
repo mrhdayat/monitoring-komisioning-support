@@ -1,0 +1,132 @@
+/* Papan Stiker (spec revisi §6). Spasi hanya 4/8/12/16/24/32. */
+.papan { min-height: 100dvh; padding-bottom: calc(var(--safe-b) + 56px + 32px); } /* tab bar 56 px */
+
+/* Header hitam + pita hazard */
+.p-head { background: var(--head); color: var(--on-head); }
+.p-head-in { padding: calc(var(--safe-t) + 16px) 16px 16px; }
+.p-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.p-title { min-width: 0; font-size: 24px; font-weight: 800; text-wrap: balance; }
+.p-links { flex: none; display: flex; gap: 8px; margin-top: -8px; }
+.p-link {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
+  border-radius: var(--r-btn); box-shadow: inset 0 0 0 2px var(--on-head-mut); color: var(--on-head); text-decoration: none;
+  font-family: var(--font-cond); font-size: 17px; font-weight: 700; line-height: 1; text-transform: uppercase; white-space: nowrap;
+}
+/* Antrean: tab bar yang menampilkannya di bawah 1024 px. Kotak oranye = ada foto belum terkirim (seperti pita pesan). */
+.p-link-q { display: none; }
+.p-link-q::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--or); }
+
+.p-score { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; margin-top: 12px; }
+.p-x { height: 1em; font-size: 64px; font-weight: 800; color: var(--neon); line-height: 1; } /* tinggi tetap: kerangka &nbsp; = angka Count */
+.p-of { font-size: 16px; font-weight: 600; }
+.p-of em { font-style: normal; color: var(--or); }
+.p-meta { margin-top: 8px; font-size: 14px; color: var(--on-head-mut); font-variant-numeric: tabular-nums; }
+.p-meta span { white-space: nowrap; }
+.p-off { color: var(--yel); font-weight: 600; }
+
+/* Filter */
+.p-body { padding: 16px 16px 0; }
+.p-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.p-seg { display: flex; gap: 8px; }
+.p-seg .chip { min-height: 44px; padding: 0 16px; font-size: 18px; }
+.p-sel { position: relative; flex: 1 1 160px; min-width: 0; }
+.p-sel::after {
+  content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px; margin-top: -6px; pointer-events: none;
+  border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg);
+}
+.p-sel select, .p-search {
+  display: block; width: 100%; height: 44px; padding: 0 12px;
+  border: 2px solid var(--ink); border-radius: var(--r-btn); background: var(--surface); color: var(--text);
+  -webkit-appearance: none; appearance: none;
+}
+.p-sel select { padding-right: 36px; font-weight: 600; text-overflow: ellipsis; }
+.p-search { flex: 1 1 180px; min-width: 0; }
+.p-search::placeholder { color: var(--mut); }
+
+/* Grup per jenis */
+.p-groups { display: grid; gap: 24px; margin-top: 24px; }
+.p-grp { min-width: 0; padding-top: 8px; border-top: 2px solid var(--ink); }
+.p-gh { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.p-gh .cond { min-width: 0; font-size: 22px; font-weight: 800; overflow-wrap: anywhere; }
+.p-gn { flex: none; font-size: 14px; font-weight: 600; color: var(--mut); font-variant-numeric: tabular-nums; }
+.p-stickers { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Stiker: lengkap = neon, sebagian = kuning muda + "n/4", belum = putih bertepi oranye. Lubang = latar halaman. */
+/* Tepi belum: --or-ink di terang (5,0:1 di --bg; --or hanya 2,6:1, WCAG 1.4.11), --or di gelap (5,9:1). */
+.sticker {
+  --bd: var(--or-ink);
+  display: inline-flex; align-items: center; gap: 8px; min-width: 44px; min-height: 44px; max-width: 100%;
+  padding: 8px 12px 8px 8px; border: 2px solid var(--bd); border-radius: var(--r-sticker);
+  background: var(--surface); color: var(--text); text-align: left;
+  font-family: var(--font-cond); font-size: 20px; font-weight: 700; line-height: 1; text-transform: uppercase;
+}
+.sticker > i { flex: none; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--mut); background: var(--bg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sticker { --bd: var(--or); } }
+:root[data-theme="dark"] .sticker { --bd: var(--or); }
+.sticker[data-s="lengkap"] { --bd: var(--neon); background: var(--neon); color: var(--on-neon); }
+.sticker[data-s="sebagian"] { --bd: var(--yel); background: var(--yel-bg); color: var(--on-neon); }
+.sticker[data-s="lengkap"] > i, .sticker[data-s="sebagian"] > i { border-color: var(--on-neon); }
+.st-no { min-width: 0; overflow-wrap: anywhere; } /* no lambung panjang dibungkus, tidak dipotong */
+.st-n {
+  flex: none; padding: 2px 4px; border-radius: var(--r-btn); background: var(--yel); color: var(--on-neon);
+  font-family: var(--font); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; text-transform: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sticker:hover .st-no { text-decoration: underline 2px; text-underline-offset: 3px; }
+  .p-link:hover { box-shadow: inset 0 0 0 2px var(--on-head); }
+}
+
+/* Status berubah lewat poll: satu denyut, hanya stiker itu. Reduced motion: warna langsung berganti. */
+@keyframes p-pulse { 50% { transform: scale(1.06); } }
+.sticker.pulse { animation: p-pulse 200ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .sticker.pulse { animation: none; } }
+
+/* Memuat pertama: kerangka statis, tidak berdenyut. */
+.p-skel { border-top-color: var(--rule); }
+.p-skel .p-gh i { display: block; width: 40%; max-width: 160px; height: 22px; border-radius: var(--r-btn); background: var(--rule); }
+.p-skel .p-stickers i { width: 96px; height: 44px; border-radius: var(--r-sticker); background: var(--rule); }
+.p-skel .p-stickers i:nth-child(3n + 2) { width: 80px; }
+.p-skel .p-stickers i:nth-child(4n) { width: 112px; }
+
+.p-foot { display: flex; justify-content: center; margin-top: 32px; padding: 0 16px; }
+.p-empty { margin: 32px 16px 0; text-align: center; font-size: 17px; color: var(--mut); text-wrap: balance; }
+.p-none { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 32px; text-align: center; color: var(--mut); }
+.p-none .btn-2 { width: auto; }
+
+/* Layar lebar: header lebih besar, grup berjajar; tetap satu layout. */
+@media (min-width: 1024px) {
+  .papan { padding-bottom: 32px; }
+  .p-head-in { padding: 24px 32px; }
+  .p-title { font-size: 32px; }
+  .p-link-q { display: inline-flex; }
+  .p-links { margin-top: 0; }
+  .p-x { font-size: 96px; }
+  .p-of { font-size: 20px; }
+  .p-meta { font-size: 16px; }
+  .p-body { padding: 24px 32px 0; }
+  .p-sel { flex: 0 1 240px; }
+  .p-search { flex: 0 1 320px; }
+  .p-groups { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); gap: 32px; align-items: start; }
+  .sticker { min-height: 48px; font-size: 22px; }
+}
+
+/* Sheet Unit */
+.us-meta { margin-top: 4px; font-size: 15px; color: var(--mut); }
+.sheet-title + .us-meta { margin-top: 8px; }
+.us-meta span { white-space: nowrap; }
+.us-meta .urgent { color: var(--or-ink); font-weight: 600; }
+.us-sides { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 16px 0 24px; padding: 0; list-style: none; }
+.us-sides li { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.us-ph {
+  display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 3 / 4; padding: 4px; overflow: hidden;
+  border: 2px dashed var(--mut); border-radius: var(--r-sticker);
+  font-size: 12px; font-weight: 600; line-height: 1.2; text-align: center; color: var(--mut); overflow-wrap: anywhere;
+}
+button.us-ph { padding: 0; border: 2px solid var(--ink); background: var(--rule); }
+.us-ph img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.us-side { display: flex; flex-direction: column; font-size: 13px; color: var(--mut); font-variant-numeric: tabular-nums; }
+.us-side b { font-weight: 600; color: var(--text); }
+.us-big { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.us-big img { display: block; width: 100%; max-height: 60dvh; object-fit: contain; border-radius: var(--r-sticker); background: var(--rule); }
+.us-big .us-meta { margin-top: 0; }
+.us-big .us-ph { aspect-ratio: auto; min-height: 160px; font-size: 15px; }

@@ -1,0 +1,77 @@
+import { createExecutionContext, env, waitOnExecutionContext } from 'cloudflare:test';
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { Env } from './http';
+import { purgeExpired } from './purge';
+import { handleUpload } from './upload';
+
+const NOW = Date.parse('2026-12-01T12:00:00+08:00');
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46]);
+
+const unit = (id: number, period: number) =>
+  env.DB.prepare("INSERT INTO units (id,period_id,no_lambung,perusahaan,kelompok_unit,jenis_unit,berlaku_akhir,week,status_she) VALUES (?,?,?,'PT A','K','DT','2027-01-01','W1','Belum Diajukan')").bind(id, period, `DT ${id}`);
+const photo = (unitId: number, sisi: string, kode: string) =>
+  env.DB.prepare("INSERT INTO photos (unit_id,sisi,kode_foto,r2_key,captured_at_device,captured_at_corrected,received_at_server,clock_offset_s,mekanik_nama,mekanik_nrp) VALUES (?,?,?,?,1,1,1,0,'B','1')").bind(unitId, sisi, kode, `foto/${kode}.jpg`);
+const count = async (t: string) => (await env.DB.prepare(`SELECT COUNT(*) c FROM ${t}`).first<{ c: number }>())!.c;
+
+beforeEach(async () => {
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM photos'), env.DB.prepare('DELETE FROM units'), env.DB.prepare('DELETE FROM periods'),
+    env.DB.prepare('INSERT INTO periods (id,label,uploaded_at,purge_after) VALUES (1,\'Lama\',1,100)'),
+    env.DB.prepare('INSERT INTO periods (id,label,uploaded_at,purge_after) VALUES (2,\'Baru\',1,9e15)'),
+    unit(1, 1), unit(2, 2),
+    photo(1, 'kanan', 'AAAA-0001'), photo(1, 'kiri', 'AAAA-0002'), photo(2, 'kanan', 'BBBB-0001'),
+  ]);
+  const list = await env.PHOTOS.list();
+  if (list.objects.length) await env.PHOTOS.delete(list.objects.map((o) => o.key));
+  for (const k of ['AAAA-0001', 'AAAA-0002', 'BBBB-0001']) await env.PHOTOS.put(`foto/${k}.jpg`, JPEG);
+});
+
+describe('purgeExpired', () => {
+  it('periode lewat purge_after: R2 & photos dihapus, unit tetap, purged_at terisi', async () => {
+    expect(await purgeExpired(env as Env, NOW)).toEqual({ periods: 1, photos: 2 });
+    expect(await env.PHOTOS.head('foto/AAAA-0001.jpg')).toBeNull();
+    expect(await env.PHOTOS.head('foto/AAAA-0002.jpg')).toBeNull();
+    expect(await count('units')).toBe(2);
+    expect((await env.DB.prepare('SELECT purged_at p FROM periods WHERE id=1').first<{ p: number }>())!.p).toBe(NOW);
+    expect(await env.PHOTOS.head('snapshot.json')).not.toBeNull();
+  });
+
+  it('periode belum lewat tidak disentuh', async () => {
+    await purgeExpired(env as Env, NOW);
+    expect(await env.PHOTOS.head('foto/BBBB-0001.jpg')).not.toBeNull();
+    expect(await count('photos')).toBe(1);
+    expect((await env.DB.prepare('SELECT purged_at p FROM periods WHERE id=2').first<{ p: number | null }>())!.p).toBeNull();
+  });
+
+  it('upload ke unit periode yang sudah dihapus → 422 unit_tidak_berlaku', async () => {
+    await purgeExpired(env as Env, NOW);
+    const meta = { kode: 'CCCC-0001', unitId: 1, sisi: 'depan', capturedAt: NOW - 1000, deviceNow: NOW, lat: -1, lon: 116, accuracy: 10, address: 'x', nama: 'B', nrp: '1' };
+    const req = new Request('https://x/api/photos', {
+      method: 'POST', body: JPEG,
+      headers: { 'X-Foto-Meta': encodeURIComponent(JSON.stringify(meta)), 'Content-Length': String(JPEG.byteLength) },
+    });
+    const ctx = createExecutionContext();
+    const res = await handleUpload(req, env as Env, ctx, NOW);
+    await waitOnExecutionContext(ctx);
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: 'unit_tidak_berlaku' });
+  });
+
+  it('batas 40 panggilan delete: periode dibiarkan belum purged, dilanjutkan run berikutnya', async () => {
+    const stmts = [];
+    // satu foto per sisi per unit → unit baru per foto
+    for (let i = 0; i < 1001; i++) stmts.push(unit(100 + i, 1), photo(100 + i, 'depan', `Z${i}`));
+    for (let i = 0; i < stmts.length; i += 100) await env.DB.batch(stmts.slice(i, i + 100));
+    const calls: number[] = [];
+    const real = env.PHOTOS.delete.bind(env.PHOTOS);
+    const spy = { ...env, PHOTOS: { delete: (k: string[]) => (calls.push(k.length), real(k)) } } as unknown as Env;
+    // semua kunci ada di D1 tetapi tak perlu ada di R2; delete R2 idempoten
+    const r = await purgeExpired(spy, NOW, 1);
+    expect(calls).toEqual([1000]);
+    expect(r.periods).toBe(0);
+    expect((await env.DB.prepare('SELECT purged_at p FROM periods WHERE id=1').first<{ p: number | null }>())!.p).toBeNull();
+    expect(await count('photos')).toBe(4);
+    expect(await purgeExpired(env as Env, NOW)).toMatchObject({ periods: 1 });
+    expect(await count('photos')).toBe(1);
+  });
+});

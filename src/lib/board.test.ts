@@ -1,0 +1,81 @@
+import { expect, test } from 'vitest';
+import { boardView, fmtTanggal, searchKey } from './board';
+import type { Snapshot, SnapUnit } from '../../shared/types';
+
+const NOW = Date.parse('2026-12-15T12:00:00+08:00');
+const f = { kode: 'X', at: 1 };
+const four = { depan: f, belakang: f, kanan: f, kiri: f };
+const mk = (id: number, no: string, jenis: string, period_id: number, week: string, sides: SnapUnit['sides'],
+  over: Partial<SnapUnit> = {}): SnapUnit => ({
+  id, period_id, no_lambung: no, perusahaan: 'PPA', kelompok_unit: 'SUPPORT', jenis_unit: jenis, week,
+  berlaku_akhir: '2027-01-31', status_she: 'Belum Diajukan', in_latest_upload: true, sides, ...over,
+});
+const base: Omit<Snapshot, 'recent'> = {
+  version: 1,
+  periods: [
+    { id: 1, label: 'Des/2026', purge_after: Date.parse('2027-01-31T23:59:59.999+08:00') },
+    { id: 2, label: 'Jan/2027', purge_after: Date.parse('2027-02-28T23:59:59.999+08:00') },
+  ],
+  units: [
+    mk(1, 'GS 0012', 'GENSET', 1, 'Week 1', four),
+    mk(2, 'GS 0031', 'Genset', 1, 'Week 1', { depan: f, kiri: f }),
+    mk(3, 'LT 0003', 'LUBE TRUCK', 2, 'Week 2', {}),
+    mk(4, 'TL 1', 'TOWER LAMP', 1, 'Week 9', {}, { status_she: 'Off Hire' }),
+    mk(5, 'GS 0040', 'GENSET', 1, 'Week 9', { depan: f }, { berlaku_akhir: '2026-12-14' }),
+  ],
+};
+// snapshot lama di cache masih membawa `recent`; harus diabaikan
+const snap = { ...base, recent: [] } as Snapshot;
+
+test('skor tidak ikut filter', () => {
+  const v = boardView(snap, { status: 'belum', week: null, q: 'lt' }, NOW);
+  expect([v.total, v.lengkap, v.belum]).toEqual([3, 1, 2]);
+});
+test('grup: Genset/GENSET digabung, n/m sebelum filter status', () => {
+  const v = boardView(snap, { status: 'belum', week: null, q: '' }, NOW);
+  expect(v.groups.map((g) => [g.jenis, g.lengkap, g.total, g.units.map((u) => u.no_lambung)]))
+    .toEqual([['GENSET', 1, 2, ['GS 0031']], ['LUBE TRUCK', 0, 1, ['LT 0003']]]);
+});
+test('filter sudah membuang grup kosong', () => {
+  expect(boardView(snap, { status: 'sudah', week: null, q: '' }, NOW).groups.map((g) => g.jenis)).toEqual(['GENSET']);
+});
+test('searchKey: gs12, 0012, "GS 0012" cocok', () => {
+  for (const q of ['gs12', '0012', 'GS 0012', 'g s 1 2']) expect(searchKey('GS 0012').includes(searchKey(q))).toBe(true);
+  expect(searchKey('GS 0012').includes(searchKey('gs13'))).toBe(false);
+});
+test('week: label berawalan periode bila >1 periode, filter week', () => {
+  const v = boardView(snap, { status: 'semua', week: null, q: '' }, NOW);
+  expect(v.weeks.map((w) => w.label)).toEqual(['Des/2026 · Week 1', 'Jan/2027 · Week 2']);
+  // Header periode ikut urutan snapshot walau unit periode berikutnya muncul lebih dulu.
+  expect(boardView({ ...snap, units: [...snap.units].reverse() }, { status: 'semua', week: null, q: '' }, NOW).periods)
+    .toEqual(['Des/2026', 'Jan/2027']);
+  const w = boardView(snap, { status: 'semua', week: v.weeks[1].key, q: '' }, NOW);
+  expect(w.groups.flatMap((g) => g.units.map((u) => u.no_lambung))).toEqual(['LT 0003']);
+  // Week pilihan hilang dari data baru: filter gugur, tidak menyaring diam-diam.
+  const gone = boardView(snap, { status: 'semua', week: '999|Week 9', q: '' }, NOW);
+  expect([gone.week, gone.groups.length]).toEqual([null, v.groups.length]);
+});
+test('poll mengubah status saat filter belum: unit hilang, skor naik', () => {
+  const after = structuredClone(snap);
+  after.units.find((u) => u.no_lambung === 'GS 0031')!.sides = four;
+  const v = boardView(after, { status: 'belum', week: null, q: '' }, NOW);
+  expect(v.lengkap).toBe(2);
+  expect(v.groups.flatMap((g) => g.units.map((u) => u.no_lambung))).toEqual(['LT 0003']);
+});
+test('fmtTanggal: tanggal WITA apa adanya, tanpa nol di depan', () => {
+  expect(fmtTanggal('2027-01-01')).toBe('1 Jan 2027');
+  expect(fmtTanggal('2026-12-31')).toBe('31 Des 2026');
+});
+
+test('code unit: urut menurut label, dicari lewat code unit, SKR BIB, dan nama SHE', () => {
+  const pop = { code_unit: 'TL141', skr_bib: 'TL0141' };
+  const s = { ...base, recent: [], units: [
+    mk(1, 'PPA - TL 0141', 'TOWER LAMP', 1, 'Week 1', {}, pop),
+    mk(2, 'PPA - TL 0200', 'TOWER LAMP', 1, 'Week 1', {}, { code_unit: 'TL9', skr_bib: 'TL0009' }),
+    mk(3, 'GS 0001', 'TOWER LAMP', 1, 'Week 1', {}), // snapshot lama: tanpa code_unit
+  ] } as Snapshot;
+  const ids = (q: string) => boardView(s, { status: 'semua', week: null, q }, NOW).groups.flatMap((g) => g.units.map((u) => u.id));
+  expect(ids('')).toEqual([3, 2, 1]);
+  for (const q of ['tl141', 'tl0141', 'PPA - TL 0141']) expect(ids(q)).toEqual([1]);
+  expect(ids('gs1')).toEqual([3]);
+});
