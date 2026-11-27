@@ -98,7 +98,7 @@ export default function Papan() {
               </select>
             </span>
             <input
-              type="search" className="p-search" placeholder="Cari no lambung" aria-label="Cari no lambung"
+              type="search" className="p-search" placeholder="Cari code unit atau no lambung" aria-label="Cari code unit atau no lambung"
               value={f.q} onChange={(e) => set({ q: e.target.value })}
               autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} enterKeyHint="search"
             />

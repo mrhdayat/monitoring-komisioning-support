@@ -38,6 +38,8 @@ npm run dev                            # http://localhost:5173
 
 Admin berikutnya bisa ditambah dari menu **Admin** di aplikasi.
 
+Sebelum impor SHE pertama tiap periode, unggah dulu file Populasi lewat menu **Populasi**. Unit yang diimpor sebelum itu ditandai "Tidak ada di populasi", dan unit seperti THDS 0007 / FR 0001 hanya ikut lewat populasi. Setelah populasi diperbarui, impor ulang file SHE.
+
 ## Naik ke Workers Paid
 
 Di paket gratis, satu permintaan hanya boleh memakai sekitar 10 ms CPU. Karena itu hash password memakai PBKDF2 10.000 iterasi. Setelah pindah ke paket Paid:

@@ -55,7 +55,7 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
           </div>
         ) : (
           <>
-            {u.code_unit && <p className="us-meta">SKR BIB {u.skr_bib} · SHE {u.no_lambung}</p>}
+            {u.code_unit && <p className="us-meta">{u.skr_bib ? `SKR BIB ${u.skr_bib} · ` : ""}SHE {u.no_lambung}</p>}
             <p className="us-meta">{u.jenis_unit} · {u.perusahaan} · {u.week}</p>
             <p className="us-meta">
               Berlaku sampai {fmtTanggal(u.berlaku_akhir)} · <span className={sisa <= 7 ? 'urgent' : undefined}>sisa {sisa} hari</span>

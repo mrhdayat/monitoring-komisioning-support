@@ -24,7 +24,7 @@ export function matchPop(noLambung: string, idx: PopIndex): { pop_status: PopSta
   const list = idx.get(unitKey(noLambung));
   if (!list) return { pop_status: 'tidak_ada', code_unit: null, skr_bib: null };
   if (list.length > 1) return { pop_status: 'ganda', code_unit: null, skr_bib: null };
-  return { pop_status: 'cocok', code_unit: list[0].code_unit, skr_bib: list[0].skr_bib };
+  return { pop_status: 'cocok', code_unit: list[0].code_unit, skr_bib: list[0].skr_bib || null };
 }
 
 export const unitLabel = (u: { code_unit?: string | null; no_lambung: string }): string => u.code_unit ?? u.no_lambung;

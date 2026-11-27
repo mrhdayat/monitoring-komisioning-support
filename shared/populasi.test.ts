@@ -16,6 +16,9 @@ test('matchPop', () => {
   expect(matchPop('GS 6001', idx)).toEqual({ pop_status: 'ganda', code_unit: null, skr_bib: null });
   expect(matchPop('LT 2601', idx)).toEqual({ pop_status: 'tidak_ada', code_unit: null, skr_bib: null });
 });
+test('SKR BIB kosong jadi null', () => {
+  expect(matchPop('TL 9', buildPopIndex([p('TL9', '')]))).toEqual({ pop_status: 'cocok', code_unit: 'TL9', skr_bib: null });
+});
 test('unit sama di dua kunci dihitung sekali', () => {
   expect(matchPop('TL 141', buildPopIndex([p('TL141', 'TL0141')])).pop_status).toBe('cocok');
 });
