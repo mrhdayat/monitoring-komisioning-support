@@ -4,6 +4,7 @@ import { useQueueCount } from '../lib/useQueueCount';
 import { useSnapshot } from '../lib/snapshot';
 import { navigate } from '../router';
 import { Count } from '../ui/Count';
+import { ThemeToggle } from '../ui/ThemeToggle';
 import { InstallGuide } from './InstallGuide';
 import { jam, UnitSheet } from './UnitSheet';
 import '../styles/papan.css';
@@ -149,6 +150,8 @@ export default function Papan() {
           )}
         </div>
       )}
+
+      <footer className="p-foot"><ThemeToggle className="chip" /></footer>
 
       <UnitSheet unit={pick} now={minute * 60_000} onClose={() => setPickId(null)} />
       <InstallGuide />

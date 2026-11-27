@@ -93,7 +93,8 @@ input, textarea, select { font: inherit; font-size: 17px; }
 }
 .chip[aria-pressed="true"] { background: var(--ink); color: var(--neon); }
 /* Gelap: --ink terang, neon di atasnya tak terbaca → isi neon. */
-@media (prefers-color-scheme: dark) { .chip[aria-pressed="true"] { background: var(--neon); color: var(--on-neon); box-shadow: none; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip[aria-pressed="true"] { background: var(--neon); color: var(--on-neon); box-shadow: none; } }
+:root[data-theme="dark"] .chip[aria-pressed="true"] { background: var(--neon); color: var(--on-neon); box-shadow: none; }
 
 /* Pita pesan: offline, error, sukses. Hitam di kedua mode, ikon kotak warna status. */
 .banner {

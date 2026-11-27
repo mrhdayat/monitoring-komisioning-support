@@ -6,6 +6,7 @@ import Import from './Import';
 import UnitTable from './UnitTable';
 import Unduhan from './Unduhan';
 import Admins from './Admins';
+import { ThemeToggle } from '../ui/ThemeToggle';
 import '../styles/admin.css';
 
 const TABS = [
@@ -60,6 +61,7 @@ export default function AdminApp() {
         </nav>
         <div className="adm-user">
           <span>{user}</span>
+          <ThemeToggle className="adm-out" />
           <button type="button" className="adm-out press" onClick={logout}>Keluar</button>
         </div>
       </aside>

@@ -61,7 +61,8 @@
   font-family: var(--font-cond); font-size: 20px; font-weight: 700; line-height: 1; text-transform: uppercase;
 }
 .sticker > i { flex: none; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--mut); background: var(--bg); }
-@media (prefers-color-scheme: dark) { .sticker { --bd: var(--or); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sticker { --bd: var(--or); } }
+:root[data-theme="dark"] .sticker { --bd: var(--or); }
 .sticker[data-s="lengkap"] { --bd: var(--neon); background: var(--neon); color: var(--on-neon); }
 .sticker[data-s="sebagian"] { --bd: var(--yel); background: var(--yel-bg); color: var(--on-neon); }
 .sticker[data-s="lengkap"] > i, .sticker[data-s="sebagian"] > i { border-color: var(--on-neon); }
@@ -87,6 +88,7 @@
 .p-skel .p-stickers i:nth-child(3n + 2) { width: 80px; }
 .p-skel .p-stickers i:nth-child(4n) { width: 112px; }
 
+.p-foot { display: flex; justify-content: center; margin-top: 32px; padding: 0 16px; }
 .p-empty { margin: 32px 16px 0; text-align: center; font-size: 17px; color: var(--mut); text-wrap: balance; }
 .p-none { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 32px; text-align: center; color: var(--mut); }
 .p-none .btn-2 { width: auto; }

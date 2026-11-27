@@ -33,9 +33,10 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
 
-/* Shift malam: palet gelap dipilih, bukan dibalik. Neon/kuning/oranye tetap. */
+/* Shift malam: palet gelap dipilih, bukan dibalik. Neon/kuning/oranye tetap.
+   Ikut sistem, kecuali pengguna memilih tema (data-theme di <html>, lihat src/ui/ThemeToggle.tsx). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #16150f;
     --surface: #1f1e18;
     --text: #edebe4; /* 15,3:1 di --bg */
@@ -46,3 +47,15 @@
     --or-ink: #ff7a45; /* #B33A00 hanya 2,8:1 di gelap; ini 6,5:1 di --surface */
   }
 }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16150f;
+  --surface: #1f1e18;
+  --text: #edebe4; /* 15,3:1 di --bg */
+  --ink: #edebe4;
+  --head: #0b0b08;
+  --mut: #a8a496; /* 7,3:1 di --bg, 6,7:1 di --surface */
+  --rule: #34332b;
+  --or-ink: #ff7a45; /* #B33A00 hanya 2,8:1 di gelap; ini 6,5:1 di --surface */
+}
+:root[data-theme="light"] { color-scheme: light; }
