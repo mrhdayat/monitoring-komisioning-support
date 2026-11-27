@@ -92,6 +92,7 @@
 .cam-shutter[aria-disabled] i { opacity: 0.4; }
 .cam-gps { justify-self: end; width: 84px; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: center; color: #aeaeb2; font-variant-numeric: tabular-nums; }
 .cam-gps-on { color: var(--neon); }
+.cam-gps-mid { color: var(--yel); }
 .cam-gps-off { color: var(--or); }
 
 /* Watermark pratinjau: angka = renderWatermarked (fraksi lebar foto). */

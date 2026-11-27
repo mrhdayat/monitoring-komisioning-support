@@ -47,7 +47,7 @@ export function watermarkText(p: WatermarkParams) {
     tanggal: `${parts.day} ${parts.month} ${parts.year}`,
     hari: parts.weekday,
     alamat: !hasGps ? ['Lokasi tidak tersedia'] : p.address ? wrapAddress(p.address) : [],
-    baris: hasGps ? `${p.lat!.toFixed(4)}, ${p.lon!.toFixed(4)} · ${kode}` : kode,
+    baris: hasGps ? `${p.lat!.toFixed(6)}, ${p.lon!.toFixed(6)} · ${kode}` : kode,
   };
 }
 

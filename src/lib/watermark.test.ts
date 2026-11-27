@@ -9,7 +9,7 @@ const base = { capturedAt: t, sisi: 'kanan' as const, lat: -3.45678, lon: 115.12
 test('format Indonesia WITA', () => {
   const w = watermarkText({ ...base, address: 'Jl. Hauling, Tapin, Kalimantan Selatan' });
   expect(w).toMatchObject({ label: 'KANAN', jam: '07:31', tanggal: '09 Oktober 2026', hari: 'Jumat',
-    baris: '-3.4568, 115.1235 · Kode Foto: AB1C-D2EF' });
+    baris: '-3.456780, 115.123450 · Kode Foto: AB1C-D2EF' });
   expect(w.alamat).toEqual(['Jl. Hauling, Tapin, Kalimantan Selatan']);
 });
 

@@ -47,3 +47,14 @@ test('watchGps: izin ditolak → tidak seketika, sekali saja', () => {
   expect(seen).toEqual(['tidak']);
   g.stop();
 });
+
+test('fix kasar tidak menimpa fix akurat yang masih baru', () => {
+  const seen: unknown[] = [];
+  const g = watchGps((s) => seen.push(s));
+  ok({ coords: { latitude: -3.41, longitude: 115.63, accuracy: 8 } });
+  ok({ coords: { latitude: -3.5, longitude: 115.7, accuracy: 900 } });
+  expect(g.get()).toEqual({ lat: -3.41, lon: 115.63, accuracy: 8 });
+  ok({ coords: { latitude: -3.4101, longitude: 115.6301, accuracy: 5 } });
+  expect(g.get()).toEqual({ lat: -3.4101, lon: 115.6301, accuracy: 5 });
+  g.stop();
+});

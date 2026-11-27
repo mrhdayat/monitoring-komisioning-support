@@ -79,8 +79,8 @@ describe('public', () => {
   });
 
   it('geocode: cache hit & param invalid', async () => {
-    await env.DB.prepare("INSERT INTO geocache (key,address,created_at) VALUES ('-1.234,116.500','Jl. Tes',1)").run();
-    const r = await SELF.fetch('https://x/api/geocode?lat=-1.2341&lon=116.5003');
+    await env.DB.prepare("INSERT INTO geocache (key,address,created_at) VALUES ('-1.2341,116.5003','Jl. Tes',1)").run();
+    const r = await SELF.fetch('https://x/api/geocode?lat=-1.23412&lon=116.50031');
     expect(await r.json()).toEqual({ address: 'Jl. Tes' });
     for (const q of ['', 'lat=91&lon=0', 'lat=0&lon=181', 'lat=abc&lon=1', 'lat=1']) {
       const b = await SELF.fetch('https://x/api/geocode?' + q);

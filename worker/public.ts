@@ -61,7 +61,7 @@ export async function geocode(url: URL, env: Env): Promise<Response> {
   const lat = q.has('lat') && q.get('lat') !== '' ? Number(q.get('lat')) : NaN;
   const lon = q.has('lon') && q.get('lon') !== '' ? Number(q.get('lon')) : NaN;
   if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)) return err('invalid', 400);
-  const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const key = `${lat.toFixed(4)},${lon.toFixed(4)}`; // ±11 m: alamat dari titik terdekat, bukan tetangga ±100 m
   const hit = await env.DB.prepare('SELECT address FROM geocache WHERE key = ?').bind(key).first<{ address: string }>();
   if (hit) return json({ address: hit.address });
   try {

@@ -237,7 +237,8 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
 
   return (
     <main ref={root} className="cam">
-      {error && <Pill tone="warning">{error}</Pill>}
+      {error ? <Pill tone="warning">{error}</Pill>
+        : hasFix && gpsStatus.accuracy > 50 && <Pill tone="warning">Lokasi kurang akurat. Tunggu sebentar di tempat terbuka, atau nyalakan Lokasi Akurat/GPS di HP.</Pill>}
       <header className="cam-top">
         <button type="button" className="cam-x press" aria-label="Tutup kamera" onClick={leave}>
           <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg></span>
@@ -366,5 +367,6 @@ function Gps({ s }: { s: GpsStatus }) {
   // id dipakai aria-describedby tombol jepret: pembaca layar ikut tahu kenapa tombol ditahan.
   if (s === 'mencari') return <span id="cam-gps" className="cam-gps">Menunggu lokasi…</span>;
   if (s === 'tidak') return <span id="cam-gps" className="cam-gps cam-gps-off">Lokasi tidak tersedia</span>;
-  return <span id="cam-gps" className="cam-gps cam-gps-on">GPS<br />± {s.accuracy} m</span>;
+  const q = s.accuracy <= 20 ? 'cam-gps-on' : s.accuracy <= 50 ? 'cam-gps-mid' : 'cam-gps-off';
+  return <span id="cam-gps" className={`cam-gps ${q}`}>{s.accuracy > 50 ? 'GPS lemah' : 'GPS'}<br />± {s.accuracy} m</span>;
 }
