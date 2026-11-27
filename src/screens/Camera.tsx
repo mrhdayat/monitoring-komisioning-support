@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { animate, useReducedMotion } from 'motion/react';
+import { unitLabel } from '../../shared/populasi';
 import { newKode } from '../../shared/kode';
 import { isExpired } from '../../shared/rules';
 import { SISI, type Sisi, type SnapUnit } from '../../shared/types';
@@ -32,7 +33,7 @@ export default function Camera() {
   if (isExpired(unit.berlaku_akhir, Date.now())) {
     return (
       <Refusal
-        title={unit.no_lambung}
+        title={unitLabel(unit)}
         lead="Unit ini sudah lewat tanggal expired"
         body={`Berlaku sampai ${fmtTanggal(unit.berlaku_akhir)}. Foto tidak bisa diambil lagi.`}
       />
@@ -210,7 +211,7 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
         }
       }
       // Sheet "tersimpan" baru boleh muncul setelah foto benar-benar tertulis di IndexedDB.
-      await enqueue({ kode, unitId: unit.id, noLambung: unit.no_lambung, sisi: target, capturedAt, lat, lon, accuracy: fix?.accuracy ?? null, address, raw, final });
+      await enqueue({ kode, unitId: unit.id, noLambung: unitLabel(unit), sisi: target, capturedAt, lat, lon, accuracy: fix?.accuracy ?? null, address, raw, final });
       url = objUrl(final ?? raw);
     } catch {
       setError('Foto gagal disimpan. Coba jepret lagi.');
@@ -242,7 +243,7 @@ function Kamera({ unit, initial }: { unit: SnapUnit; initial: Sisi | null }) {
           <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg></span>
         </button>
         <div className="cam-unit">
-          <h1>{unit.no_lambung}</h1>
+          <h1>{unitLabel(unit)}</h1>
           <p>{unit.jenis_unit}</p>
         </div>
       </header>

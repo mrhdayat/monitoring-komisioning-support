@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { unitLabel } from '../../shared/populasi';
 import { boardView, sidesDone, type BoardFilter, type StatusFilter } from '../lib/board';
 import { useQueueCount } from '../lib/useQueueCount';
 import { useSnapshot } from '../lib/snapshot';
@@ -132,13 +133,13 @@ export default function Papan() {
                           key={u.id} type="button"
                           className={`sticker press${changed.has(u.id) ? ' pulse' : ''}`}
                           data-s={n === 4 ? 'lengkap' : n > 0 ? 'sebagian' : 'belum'}
-                          aria-label={`${u.no_lambung}, ${n} dari 4 sisi`}
+                          aria-label={`${unitLabel(u)}, ${n} dari 4 sisi`}
                           onClick={() => setPickId(u.id)}
                           // Sekali saja: stiker yang dipasang ulang (ganti filter/cari) tanpa data baru tidak berdenyut lagi.
                           onAnimationEnd={() => changed.delete(u.id)}
                         >
                           <i aria-hidden="true" />
-                          <span className="st-no">{u.no_lambung}</span>
+                          <span className="st-no">{unitLabel(u)}</span>
                           {n > 0 && n < 4 && <span className="st-n">{n}/4</span>}
                         </button>
                       );

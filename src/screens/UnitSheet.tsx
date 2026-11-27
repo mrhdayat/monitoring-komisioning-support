@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { unitLabel } from '../../shared/populasi';
 import { expiryEndMs } from '../../shared/rules';
 import { SISI, type Sisi, type SnapUnit } from '../../shared/types';
 import { fmtTanggal, sidesDone } from '../lib/board';
@@ -36,12 +37,12 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
 
   return (
     <>
-      <Sheet open={!!unit} onClose={onClose} title={u?.no_lambung}>
+      <Sheet open={!!unit} onClose={onClose} title={u ? unitLabel(u) : undefined}>
         {u && (shot ? (
           <div className="us-big">
             {rusak.has(shot.kode) ? <p className="us-ph">Foto belum bisa dimuat</p> : (
               <img
-                src={`/api/photo/${shot.kode}`} alt={`Foto ${LABEL[big!]} ${u.no_lambung}`} decoding="async"
+                src={`/api/photo/${shot.kode}`} alt={`Foto ${LABEL[big!]} ${unitLabel(u)}`} decoding="async"
                 onError={() => setRusak((r) => new Set(r).add(shot.kode))}
               />
             )}
@@ -54,6 +55,7 @@ export function UnitSheet({ unit, now, onClose }: { unit: SnapUnit | null; now: 
           </div>
         ) : (
           <>
+            {u.code_unit && <p className="us-meta">SKR BIB {u.skr_bib} · SHE {u.no_lambung}</p>}
             <p className="us-meta">{u.jenis_unit} · {u.perusahaan} · {u.week}</p>
             <p className="us-meta">
               Berlaku sampai {fmtTanggal(u.berlaku_akhir)} · <span className={sisa <= 7 ? 'urgent' : undefined}>sisa {sisa} hari</span>

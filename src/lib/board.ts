@@ -1,4 +1,5 @@
 import { classifyForMechanic } from '../../shared/rules';
+import { unitLabel } from '../../shared/populasi';
 import type { Snapshot, SnapUnit } from '../../shared/types';
 
 export type StatusFilter = 'semua' | 'belum' | 'sudah';
@@ -41,7 +42,7 @@ export function boardView(s: Snapshot, f: BoardFilter, now: number): BoardView {
   const week = f.week !== null && weekMap.has(f.week) ? f.week : null;
   const q = searchKey(f.q);
   const scoped = shown.filter((u) =>
-    (week === null || `${u.period_id}|${u.week}` === week) && searchKey(u.no_lambung).includes(q));
+    (week === null || `${u.period_id}|${u.week}` === week) && [u.code_unit, u.skr_bib, u.no_lambung].some((n) => n && searchKey(n).includes(q)));
   const byJenis = new Map<string, SnapUnit[]>();
   for (const u of scoped) {
     const k = jenisKey(u.jenis_unit);
@@ -51,7 +52,7 @@ export function boardView(s: Snapshot, f: BoardFilter, now: number): BoardView {
     .map(([jenis, all]) => ({
       jenis, total: all.length, lengkap: all.filter((u) => sidesDone(u) === 4).length,
       units: all.filter((u) => f.status === 'semua' || (sidesDone(u) === 4) === (f.status === 'sudah'))
-        .sort((a, b) => num(a.no_lambung, b.no_lambung)),
+        .sort((a, b) => num(unitLabel(a), unitLabel(b))),
     }))
     .filter((g) => g.units.length > 0);
 

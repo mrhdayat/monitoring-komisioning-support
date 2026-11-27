@@ -66,3 +66,16 @@ test('fmtTanggal: tanggal WITA apa adanya, tanpa nol di depan', () => {
   expect(fmtTanggal('2027-01-01')).toBe('1 Jan 2027');
   expect(fmtTanggal('2026-12-31')).toBe('31 Des 2026');
 });
+
+test('code unit: urut menurut label, dicari lewat code unit, SKR BIB, dan nama SHE', () => {
+  const pop = { code_unit: 'TL141', skr_bib: 'TL0141' };
+  const s = { ...base, recent: [], units: [
+    mk(1, 'PPA - TL 0141', 'TOWER LAMP', 1, 'Week 1', {}, pop),
+    mk(2, 'PPA - TL 0200', 'TOWER LAMP', 1, 'Week 1', {}, { code_unit: 'TL9', skr_bib: 'TL0009' }),
+    mk(3, 'GS 0001', 'TOWER LAMP', 1, 'Week 1', {}), // snapshot lama: tanpa code_unit
+  ] } as Snapshot;
+  const ids = (q: string) => boardView(s, { status: 'semua', week: null, q }, NOW).groups.flatMap((g) => g.units.map((u) => u.id));
+  expect(ids('')).toEqual([3, 2, 1]);
+  for (const q of ['tl141', 'tl0141', 'PPA - TL 0141']) expect(ids(q)).toEqual([1]);
+  expect(ids('gs1')).toEqual([3]);
+});
