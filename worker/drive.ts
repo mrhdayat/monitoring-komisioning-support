@@ -126,8 +126,30 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
     return (await env.DB.prepare('SELECT drive_folder_id FROM periods WHERE id = ?').bind(periodId).first<{ drive_folder_id: string }>())!.drive_folder_id;
   };
 
-  const putOnce = async ({ name, periodId, bytes }: { name: string; periodId: number; bytes: Uint8Array }) => {
+  // Folder unit di dalam folder periode (Komisioning/<periode>/<Code Unit>/), diklaim sama seperti folder periode.
+  const unitFolder = async (unitId: number, periodId: number, folderName: string) => {
+    const u = await env.DB.prepare('SELECT drive_folder_id FROM units WHERE id = ?').bind(unitId).first<{ drive_folder_id: string | null }>();
+    if (u?.drive_folder_id) return u.drive_folder_id;
     const parent = await periodFolder(periodId);
+    let mine: string;
+    try {
+      mine = await mkFolder(folderName, parent);
+    } catch (e) {
+      if ((e as { status?: number }).status === 404 || e instanceof Gone) {
+        await env.DB.prepare('UPDATE periods SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(periodId, parent).run();
+        throw new Gone();
+      }
+      throw e;
+    }
+    const claim = await env.DB.prepare('UPDATE units SET drive_folder_id = ? WHERE id = ? AND drive_folder_id IS NULL').bind(mine, unitId).run();
+    if (claim.meta.changes) return mine;
+    await delFile(mine);
+    return (await env.DB.prepare('SELECT drive_folder_id FROM units WHERE id = ?').bind(unitId).first<{ drive_folder_id: string }>())!.drive_folder_id;
+  };
+
+  const putOnce = async ({ name, periodId, unitId, folderName, bytes }: { name: string; periodId: number; unitId?: number; folderName?: string; bytes: Uint8Array }) => {
+    const inUnit = unitId !== undefined && !!folderName;
+    const parent = inUnit ? await unitFolder(unitId!, periodId, folderName!) : await periodFolder(periodId);
     const b = `b${crypto.randomUUID()}`;
     const body = new Blob([
       `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
@@ -139,7 +161,9 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
     // `trashed` di respons = berkas ikut tempat sampah karena foldernya di-trash: tanpa GET tambahan per upload.
     if (r.status === 404 || j?.trashed) {
       if (j) await delFile(j.id);
-      await env.DB.prepare('UPDATE periods SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(periodId, parent).run();
+      await (inUnit
+        ? env.DB.prepare('UPDATE units SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(unitId!, parent)
+        : env.DB.prepare('UPDATE periods SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(periodId, parent)).run();
       throw new Gone();
     }
     await ok(r, 'upload');
@@ -148,11 +172,13 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
 
   return {
     async put(f) {
-      try {
-        return await putOnce(f);
-      } catch (e) {
-        if (e instanceof Gone) return putOnce(f); // sekali saja; gagal lagi → error biasa
-        throw e;
+      // Gone bisa bertingkat (folder unit → folder periode → root di-trash): ulang maks. 3 kali, lalu error biasa.
+      for (let i = 0; ; i++) {
+        try {
+          return await putOnce(f);
+        } catch (e) {
+          if (!(e instanceof Gone) || i >= 3) throw e;
+        }
       }
     },
     async get(id) {

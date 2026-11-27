@@ -5,7 +5,7 @@ import { DriveDisconnected } from './drive';
 import { err, json, type Env } from './http';
 import { unitLabel } from '../shared/populasi';
 import { rebuildSnapshot } from './snapshot';
-import { fileName, getStore } from './store';
+import { fileName, getStore, folderName } from './store';
 
 const MAX_BYTES = 2_097_152;
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -64,7 +64,7 @@ export async function handleUpload(req: Request, env: Env, ctx: ExecutionContext
   if (!store) return err('penyimpanan_belum_siap', 503);
   let key: string;
   try {
-    key = await store.put({ name: fileName(unitLabel(unit), m.sisi, m.kode), periodId: unit.period_id, bytes: new Uint8Array(buf) });
+    key = await store.put({ name: fileName(unitLabel(unit), m.sisi, m.kode), periodId: unit.period_id, unitId: m.unitId, folderName: folderName(unitLabel(unit)), bytes: new Uint8Array(buf) });
   } catch (e) {
     if (e instanceof DriveDisconnected) return err('penyimpanan_belum_siap', 503); // izin dicabut saat upload; status sudah 'terputus'
     throw e;

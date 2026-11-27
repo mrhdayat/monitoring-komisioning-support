@@ -2,7 +2,7 @@ import { driveStore } from './drive';
 import type { Env } from './http';
 
 export interface Store {
-  put(f: { name: string; periodId: number; bytes: Uint8Array }): Promise<string>;
+  put(f: { name: string; periodId: number; unitId?: number; folderName?: string; bytes: Uint8Array }): Promise<string>;
   get(id: string): Promise<Response | null>;
   del(ids: string[]): Promise<void>;
   trashPeriod(periodId: number): Promise<void>;
@@ -38,5 +38,6 @@ export async function getStore(env: Env, fetchImpl: typeof fetch = fetch): Promi
   return s.drive_refresh_token && s.drive_status !== 'terputus' ? driveStore(env, fetchImpl) : null;
 }
 
-export const fileName = (label: string, sisi: string, kode: string) =>
-  `${label}_${sisi}_${kode}.jpg`.replace(/[/\\:*?"<>|]/g, '-');
+const safe = (s: string) => s.replace(/[/\\:*?"<>|]/g, '-');
+export const fileName = (label: string, sisi: string, kode: string) => safe(`${label}_${sisi}_${kode}.jpg`);
+export const folderName = (label: string) => safe(label);

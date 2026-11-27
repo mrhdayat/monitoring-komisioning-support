@@ -246,3 +246,30 @@ describe('getPhoto dengan Drive', () => {
     expect([r.status, await r.json()]).toEqual([503, { error: 'penyimpanan_belum_siap' }]);
   });
 });
+
+describe('folder per unit', () => {
+  const unit = () => env.DB.prepare(
+    "INSERT INTO units (id,period_id,no_lambung,perusahaan,kelompok_unit,jenis_unit,berlaku_akhir,week,status_she) VALUES (5,1,'PPA - TL 0141','PPA','SUPPORT','TOWER LAMP','2026-12-31','W1','Belum Diajukan')").run();
+  const folderPosts = (calls: Call[]) => calls.filter((c) => c.method === 'POST' && c.url.includes('www.googleapis.com/drive/v3/files?')).map((c) => c.body.name);
+  it('Komisioning/<periode>/<unit>/ dibuat sekali, upload ke folder unit', async () => {
+    await unit();
+    const { f, calls } = fake();
+    const s = driveStore(e, f);
+    await s.put({ name: 'TL141_depan_A.jpg', periodId: 1, unitId: 5, folderName: 'TL141', bytes: new Uint8Array([1]) });
+    await s.put({ name: 'TL141_kiri_B.jpg', periodId: 1, unitId: 5, folderName: 'TL141', bytes: new Uint8Array([1]) });
+    expect(folderPosts(calls)).toEqual(['Komisioning', 'Des-2026', 'TL141']);
+    const unitId = (await env.DB.prepare('SELECT drive_folder_id FROM units WHERE id = 5').first<{ drive_folder_id: string }>())!.drive_folder_id;
+    const ups = calls.filter((c) => c.url.includes('/upload/drive/v3/files'));
+    for (const u of ups) expect(await (u.raw as Blob).text()).toContain(`"parents":["${unitId}"]`);
+  });
+  it('folder unit di-trash → dibuat ulang, foto tetap masuk', async () => {
+    await unit();
+    let first = true;
+    const { f, calls } = fake((c) => {
+      if (c.url.includes('/upload/drive/v3/files') && first) { first = false; return jres({ id: 'tr', trashed: true }); }
+    });
+    const id = await driveStore(e, f).put({ name: 'x.jpg', periodId: 1, unitId: 5, folderName: 'TL141', bytes: new Uint8Array([1]) });
+    expect(id).not.toBe('tr');
+    expect(folderPosts(calls)).toEqual(['Komisioning', 'Des-2026', 'TL141', 'TL141']);
+  });
+});
