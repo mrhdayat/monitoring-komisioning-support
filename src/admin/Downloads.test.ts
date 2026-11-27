@@ -5,7 +5,7 @@ import { rekapRows, todayWita, zipName, zipPath } from './Downloads';
 const u = (o: Partial<AdminUnit>): AdminUnit => ({
   id: 1, period_id: 1, no_lambung: 'DT 4464', perusahaan: 'PT A', kelompok_unit: 'K', jenis_unit: 'Dump Truck', week: 'Week2',
   berlaku_akhir: '2026-12-10', status_she: 'Belum Diajukan', in_latest_upload: true, sides: {}, period: 'Des/2026',
-  status: 'belum', perluCek: false, photos: {}, ...o,
+  status: 'belum', perluCek: false, pop_status: 'tidak_ada', photos: {}, ...o,
 });
 const ph = (kode: string, nama: string, nrp: string, flags = '') => ({
   kode, captured_at_device: Date.UTC(2026, 11, 1, 0, 0, 0), received_at_server: 0, clock_offset_s: 0,

@@ -2,6 +2,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import * as XLSX from 'xlsx';
+import { buildPopIndex } from '../../shared/populasi';
+import { parsePopulasi } from './populasi';
 import { parseBerlakuAkhir, parseSheRows, rowsFromSheet } from './excel';
 
 const H = ['No', 'No Lambung', 'Perusahaan', 'Kelompok Unit', 'Jenis Unit', 'Komisioner', 'Berlaku Akhir', 'Week', 'Periode', 'Status'];
@@ -15,6 +17,7 @@ describe('excel SHE', () => {
     expect(byPeriod.get('Des/2026')![0]).toEqual({
       no_lambung: 'TG 2028', perusahaan: 'PPA', kelompok_unit: 'SUPPORT', jenis_unit: 'TRUCK SUPPORT',
       berlaku_akhir: '2027-01-01', week: 'Week 1', status_she: 'Belum Diajukan',
+      code_unit: null, skr_bib: null, pop_status: 'tidak_ada',
     });
   });
   test('parseBerlakuAkhir Inggris & Indonesia', () => {
@@ -60,12 +63,22 @@ test('baris non-support dibuang tanpa error, dihitung', () => {
   const blank = [2, 'DT 1', 'PPA', 'WHEEL', '', '', '', '', '', ''];
   const { byPeriod, errors, totalRows, supportRows } = parseSheRows([H, r('GS 1', 'PPA', 'NON UNIT'), r('DT 2', 'PPA', 'WHEEL'), blank, r('FR 0001', '-', 'SUPPORT')]);
   expect(errors).toEqual([]);
-  expect(byPeriod.get('Des/2026')!.map((u) => u.no_lambung)).toEqual(['GS 1', 'FR 0001']);
-  expect([totalRows, supportRows]).toEqual([4, 2]);
+  expect(byPeriod.get('Des/2026')!.map((u) => u.no_lambung)).toEqual(['GS 1']);
+  expect([totalRows, supportRows]).toEqual([4, 1]);
+});
+test('dengan populasi, FR 0001 masuk lewat kecocokan', () => {
+  const r = [1, 'FR 0001', '-', 'SUPPORT', 'FRONT', '-', '01-Jan-2027', 'Week 1', 'Des/2026', 'Belum Diajukan'];
+  const idx = buildPopIndex([{ code_unit: 'FR01', skr_bib: 'FR0001', jenis: 'X', maint: 'PPA' }]);
+  const out = parseSheRows([H, r], idx);
+  expect(out.byPeriod.get('Des/2026')![0]).toMatchObject({ code_unit: 'FR01', skr_bib: 'FR0001', pop_status: 'cocok' });
+  expect([out.supportRows, out.cocok, out.perluCek]).toEqual([1, 1, []]);
 });
 const SAMPLE = 'Deadline_Pengajuan_Komisioning_20261120_234805.xlsx';
-test.skipIf(!existsSync(SAMPLE))('file contoh → 84 unit support dari 399 baris', () => {
+const POP = process.env.HOME + '/Downloads/01. Populasi & Status Unit A2B & A2S Update November 2026 (DI COPY YA JANGAN DI CUT& DEL)..xlsx';
+test.skipIf(!existsSync(SAMPLE) || !existsSync(POP))('file contoh + populasi → 84 support dari 399, 80 cocok, 4 perlu cek', { timeout: 30000 }, () => {
+  const idx = buildPopIndex(parsePopulasi(XLSX.read(readFileSync(POP))).units);
   const ws = XLSX.read(readFileSync(SAMPLE)); // sheet pertama
-  const { supportRows, totalRows } = parseSheRows(rowsFromSheet(ws.Sheets[ws.SheetNames[0]]));
-  expect([supportRows, totalRows]).toEqual([84, 399]);
+  const { supportRows, totalRows, cocok, perluCek } = parseSheRows(rowsFromSheet(ws.Sheets[ws.SheetNames[0]]), idx);
+  expect([supportRows, totalRows, cocok, perluCek.length]).toEqual([84, 399, 80, 4]);
+  expect(perluCek.every((x) => x.alasan === 'tidak_ada')).toBe(true);
 });

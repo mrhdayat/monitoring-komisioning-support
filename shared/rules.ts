@@ -20,11 +20,8 @@ export function purgeAfterMs(periodLabel: string): number {
   return Date.UTC(+m[2], month + 1, 1) - WITA_MS - 1;
 }
 
-export const SUPPORT_PENGECUALIAN: readonly string[] = ['THDS 0007', 'FR 0001'];
-
 const up = (s: string) => s.trim().toUpperCase().replace(/\s+/g, ' ');
-export function isSupportUnit(u: Pick<ImportUnit, 'no_lambung' | 'perusahaan' | 'kelompok_unit'>): boolean {
-  if (SUPPORT_PENGECUALIAN.includes(up(u.no_lambung))) return true;
+export function isSupportUnit(u: Pick<ImportUnit, 'perusahaan' | 'kelompok_unit'>): boolean {
   return ['NON UNIT', 'SUPPORT'].includes(up(u.kelompok_unit)) && ['PPA', 'AMM'].includes(up(u.perusahaan));
 }
 

@@ -5,7 +5,7 @@ import { clockOffsetText, filterUnits, retentionBanners, waText, type Filters } 
 const U = (o: Partial<AdminUnit>): AdminUnit => ({
   id: 1, period_id: 1, no_lambung: 'DT 4464', perusahaan: 'PT A', kelompok_unit: 'DT', jenis_unit: 'Dump Truck',
   week: 'Week 2', berlaku_akhir: '2027-01-01', status_she: 'Belum Diajukan', in_latest_upload: true,
-  sides: {}, period: 'Des/2026', status: 'belum', perluCek: false, photos: {}, ...o,
+  sides: {}, period: 'Des/2026', status: 'belum', perluCek: false, pop_status: 'tidak_ada', photos: {}, ...o,
 });
 const F = (o: Partial<Filters> = {}): Filters => ({ status: 'semua', q: '', periodId: 0, week: '', hidden: false, ...o });
 const kiri = { kode: 'AAAA-BBBB', at: 1 };

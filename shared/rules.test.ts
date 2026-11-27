@@ -39,9 +39,8 @@ test('isSupportUnit', () => {
   expect(isSupportUnit(u('GS 0012', 'PPA', 'NON UNIT'))).toBe(true);
   expect(isSupportUnit(u('THDS 0009', 'PPA', 'SUPPORT'))).toBe(true);
   expect(isSupportUnit(u('LT 0003', 'AMM', 'SUPPORT'))).toBe(true);
-  expect(isSupportUnit(u('THDS 0007', 'TU', 'SUPPORT'))).toBe(true);
-  expect(isSupportUnit(u('FR 0001', '-', 'SUPPORT'))).toBe(true);
-  expect(isSupportUnit(u(' thds  0007 ', 'TU', 'SUPPORT'))).toBe(true);
+  expect(isSupportUnit(u('THDS 0007', 'TU', 'SUPPORT'))).toBe(false);
+  expect(isSupportUnit(u('FR 0001', '-', 'SUPPORT'))).toBe(false);
   expect(isSupportUnit(u('GS 1', ' ppa ', 'Non  Unit'))).toBe(true);
   expect(isSupportUnit(u('DT 4464', 'PPA', 'WHEEL'))).toBe(false);
   expect(isSupportUnit(u('GS 9', 'BTN', 'NON UNIT'))).toBe(false);

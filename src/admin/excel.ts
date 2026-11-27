@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { isSupportUnit, MONTHS, purgeAfterMs } from '../../shared/rules';
+import { matchPop, type PopIndex } from '../../shared/populasi';
 import type { ImportUnit } from '../../shared/types';
 
 const clean = (v: unknown) => String(v ?? '').trim().replace(/\s+/g, ' ');
@@ -28,22 +29,24 @@ const LABEL: Record<string, string> = {
   berlaku_akhir: 'Berlaku Akhir', week: 'Week', periode: 'Periode', status_she: 'Status',
 };
 
-interface Parsed { byPeriod: Map<string, ImportUnit[]>; errors: string[]; totalRows: number; supportRows: number }
+interface Parsed { byPeriod: Map<string, ImportUnit[]>; errors: string[]; totalRows: number; supportRows: number;
+  cocok: number; perluCek: { no_lambung: string; alasan: 'tidak_ada' | 'ganda' }[] }
 
-export function parseSheRows(rows: unknown[][]): Parsed {
+export function parseSheRows(rows: unknown[][], popIdx?: PopIndex): Parsed {
   const byPeriod = new Map<string, ImportUnit[]>();
   const errors: string[] = [];
-  let totalRows = 0, supportRows = 0;
+  let totalRows = 0, supportRows = 0, cocok = 0;
+  const perluCek: Parsed['perluCek'] = [];
   const norm = (c: unknown) => clean(c).toLowerCase();
   const h = rows.findIndex((r) => r.some((c) => norm(c) === 'no lambung'));
-  if (h < 0) return { byPeriod, errors: ['Kolom No Lambung tidak ditemukan'], totalRows, supportRows };
+  if (h < 0) return { byPeriod, errors: ['Kolom No Lambung tidak ditemukan'], totalRows, supportRows, cocok, perluCek };
   const head = rows[h].map(norm);
   const idx = {} as Record<keyof typeof COLS, number>;
   for (const k of Object.keys(COLS) as (keyof typeof COLS)[]) {
     idx[k] = head.indexOf(COLS[k]);
     if (idx[k] < 0) errors.push(`Kolom ${LABEL[k]} tidak ditemukan`);
   }
-  if (errors.length) return { byPeriod, errors, totalRows, supportRows };
+  if (errors.length) return { byPeriod, errors, totalRows, supportRows, cocok, perluCek };
 
   for (let i = h + 1; i < rows.length; i++) {
     const r = rows[i] ?? [];
@@ -52,19 +55,21 @@ export function parseSheRows(rows: unknown[][]): Parsed {
     const v = {} as Record<keyof typeof COLS, string>;
     for (const k of Object.keys(COLS) as (keyof typeof COLS)[]) v[k] = clean(r[idx[k]]);
     totalRows++;
-    if (!isSupportUnit(v)) continue;
+    const pop = popIdx ? matchPop(v.no_lambung, popIdx) : { pop_status: 'tidak_ada' as const, code_unit: null, skr_bib: null };
+    if (!isSupportUnit(v) && pop.pop_status === 'tidak_ada') continue;
     supportRows++;
     const empty = (Object.keys(COLS) as (keyof typeof COLS)[]).find((k) => !v[k]);
     if (empty) { errors.push(`Baris ${n}: ${LABEL[empty]} kosong`); continue; }
     const berlaku = parseBerlakuAkhir(v.berlaku_akhir);
     if (!berlaku) { errors.push(`Baris ${n}: tanggal Berlaku Akhir tidak valid ("${v.berlaku_akhir}")`); continue; }
     try { purgeAfterMs(v.periode); } catch { errors.push(`Baris ${n}: periode tidak valid ("${v.periode}")`); continue; }
+    if (pop.pop_status === 'cocok') cocok++; else perluCek.push({ no_lambung: v.no_lambung, alasan: pop.pop_status });
     const { periode, ...rest } = v;
     const list = byPeriod.get(periode) ?? [];
-    list.push({ ...rest, berlaku_akhir: berlaku });
+    list.push({ ...rest, berlaku_akhir: berlaku, ...pop });
     byPeriod.set(periode, list);
   }
-  return { byPeriod, errors, totalRows, supportRows };
+  return { byPeriod, errors, totalRows, supportRows, cocok, perluCek };
 }
 
 // range: 0 mulai dari baris 1 Excel meski !ref mulai lebih bawah; baris kosong dipertahankan agar indeks+1 = nomor baris Excel

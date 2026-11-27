@@ -4,11 +4,15 @@ export type Section = 'aktif' | 'selesai' | 'tersembunyi';
 export type AdminStatus = 'belum' | 'sebagian' | 'lengkap' | 'lewat_expired';
 export type Flag = 'jam' | 'gps';
 
+export type PopStatus = 'cocok' | 'ganda' | 'tidak_ada';
+export interface PopUnit { code_unit: string; skr_bib: string; jenis: string; maint: string }
+
 export interface SnapUnit {
   id: number; period_id: number; no_lambung: string; perusahaan: string;
   kelompok_unit: string; jenis_unit: string; week: string;
   berlaku_akhir: string;            // YYYY-MM-DD
   status_she: string; in_latest_upload: boolean;
+  code_unit?: string | null; skr_bib?: string | null;   // opsional: snapshot lama di cache tidak punya
   sides: Partial<Record<Sisi, { kode: string; at: number }>>; // at = captured_at_device
 }
 export interface AdminPhoto {
@@ -19,7 +23,7 @@ export interface AdminPhoto {
   address: string | null; lat: number | null; lon: number | null;
 }
 export interface AdminUnit extends SnapUnit {
-  period: string; status: AdminStatus; perluCek: boolean;
+  period: string; status: AdminStatus; perluCek: boolean; pop_status: PopStatus;
   photos: Partial<Record<Sisi, AdminPhoto>>;
 }
 export interface AdminPeriod { id: number; label: string; purge_after: number; purged_at: number | null }
@@ -42,4 +46,5 @@ export interface ImportUnit {
   no_lambung: string; perusahaan: string; kelompok_unit: string; jenis_unit: string;
   berlaku_akhir: string; // YYYY-MM-DD
   week: string; status_she: string;
+  code_unit: string | null; skr_bib: string | null; pop_status: PopStatus;
 }
