@@ -20,7 +20,7 @@ export interface AdminPhoto {
   clock_offset_s: number;           // detik; positif = jam HP tertinggal dari server
   mekanik_nama: string; mekanik_nrp: string;
   flags: string;                    // '' | 'jam' | 'gps' | 'jam,gps'
-  address: string | null; lat: number | null; lon: number | null;
+  address: string | null; lat: number | null; lon: number | null; accuracy_m: number | null;
 }
 export interface AdminUnit extends SnapUnit {
   period: string; status: AdminStatus; perluCek: boolean; pop_status: PopStatus;

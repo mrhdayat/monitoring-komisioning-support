@@ -47,7 +47,8 @@ describe('public', () => {
 
   it('check kode menormalkan input & tanpa nama mekanik', async () => {
     const body = await (await SELF.fetch('https://x/api/check/ab1cd2ef')).json();
-    expect(body).toEqual({ kode: 'AB1C-D2EF', no_lambung: 'DT 4464', sisi: 'depan', captured_at: 1000, received_at: 2000 });
+    expect(body).toEqual({ kode: 'AB1C-D2EF', no_lambung: 'DT 4464', sisi: 'depan', captured_at: 1000, received_at: 2000,
+      lat: null, lon: null, accuracy_m: null, address: null });
   });
   it('check kode tak ada → 404', async () => {
     expect((await SELF.fetch('https://x/api/check/ZZZZ-ZZZZ')).status).toBe(404);

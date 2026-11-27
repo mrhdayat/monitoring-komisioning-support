@@ -139,6 +139,7 @@
 .ud-dim { color: var(--mut); }
 .ud-warn { font-weight: 600; color: var(--or-ink); }
 .ud-addr { color: var(--mut); overflow-wrap: anywhere; }
+.ud-map { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--or); text-underline-offset: 3px; text-decoration-thickness: 2px; }
 .ud-acts { display: flex; gap: 8px; margin-top: 12px; }
 .ud-conf { margin-top: 6px; font-size: 16px; line-height: 1.4; }
 .ud-conf-err { min-height: 1.4em; margin: 8px 0; font-size: 14px; font-weight: 500; color: var(--or-ink); }

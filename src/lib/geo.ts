@@ -35,6 +35,8 @@ export function mergeAddress(osm: string | null, bdc: Bdc | null): string | null
   return parts.join(', ');
 }
 
+export const mapsUrl = (lat: number, lon: number) => `https://www.google.com/maps?q=${lat},${lon}`;
+
 export interface Fix { lat: number; lon: number; accuracy: number }
 export type GpsStatus = Fix | 'mencari' | 'tidak';
 

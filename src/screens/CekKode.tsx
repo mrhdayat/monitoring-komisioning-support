@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { normalizeKode } from '../../shared/kode';
+import { mapsUrl } from '../lib/geo';
 import { navigate, useRoute } from '../router';
 import { CekForm } from './CekForm';
 
-interface Hasil { kode: string; no_lambung: string; sisi: string; captured_at: number; received_at: number }
+interface Hasil {
+  kode: string; no_lambung: string; sisi: string; captured_at: number; received_at: number;
+  lat: number | null; lon: number | null; accuracy_m: number | null; address: string | null;
+}
 
 const full = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', dateStyle: 'long', timeStyle: 'medium', hourCycle: 'h23' });
 const wita = (ms: number) => `${full.format(ms).replace(/\./g, ':')} WITA`;
@@ -52,6 +56,12 @@ export default function CekKode() {
             <div><dt>Sisi</dt><dd className="cap">{cur.sisi}</dd></div>
             <div><dt>Dijepret</dt><dd>{wita(cur.captured_at)}</dd></div>
             <div><dt>Diterima server</dt><dd>{wita(cur.received_at)}</dd></div>
+            <div><dt>Titik GPS</dt><dd>{cur.lat !== null && cur.lon !== null ? (
+              <a className="cek-map" href={mapsUrl(cur.lat, cur.lon)} target="_blank" rel="noreferrer">
+                {cur.lat.toFixed(6)}, {cur.lon.toFixed(6)}{cur.accuracy_m !== null && ` (±${cur.accuracy_m} m)`} · Buka peta ↗
+              </a>
+            ) : 'Tidak tersedia'}</dd></div>
+            {cur.address && <div><dt>Alamat</dt><dd>{cur.address}</dd></div>}
           </dl>
         </article>
       )}

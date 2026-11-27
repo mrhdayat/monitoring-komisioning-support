@@ -90,7 +90,7 @@ async function listUnits(env: Env, now: number) {
               u.status_she, u.in_latest_upload, u.code_unit, u.skr_bib, u.pop_status, p.label AS period FROM units u JOIN periods p ON p.id = u.period_id ORDER BY u.id`),
     env.DB.prepare(
       `SELECT unit_id, sisi, kode_foto AS kode, captured_at_device, received_at_server, clock_offset_s, mekanik_nama,
-              mekanik_nrp, flags, address, lat, lon FROM photos`),
+              mekanik_nrp, flags, address, lat, lon, accuracy_m FROM photos`),
   ]);
   const byUnit = new Map<number, Record<string, any>[]>();
   for (const p of photos.results as Record<string, any>[]) byUnit.set(p.unit_id, [...(byUnit.get(p.unit_id) ?? []), p]);

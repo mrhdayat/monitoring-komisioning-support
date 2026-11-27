@@ -180,4 +180,6 @@
 .cek-card dt { font-size: 14px; color: var(--mut); }
 .cek-card dd { margin: 0; font-size: 15px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .cek-card dl div:first-child dd { font-family: var(--font-cond); font-size: 24px; font-weight: 800; text-transform: uppercase; }
+.cek-card dd { overflow-wrap: anywhere; }
+.cek-map { color: var(--ink); text-decoration: underline; text-decoration-color: var(--or); text-underline-offset: 3px; text-decoration-thickness: 2px; }
 .cap { text-transform: capitalize; }

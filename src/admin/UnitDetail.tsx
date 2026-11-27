@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SISI, type AdminPeriod, type AdminPhoto, type AdminUnit, type Sisi } from '../../shared/types';
 import { unitLabel } from '../../shared/populasi';
 import { Sheet } from '../ui/Sheet';
+import { mapsUrl } from '../lib/geo';
 import { adminFetch } from './api';
 import DownloadButtons from './DownloadButtons';
 import { clockOffsetText, witaText } from './unitUtils';
@@ -87,6 +88,11 @@ function Photo({ unit, sisi, p, onDelete }: { unit: AdminUnit; sisi: Sisi; p: Ad
         <p className={jam ? 'ud-warn' : 'ud-dim'}>{jam && '⚠ '}{clockOffsetText(p.clock_offset_s)}</p>
         {gps && <p className="ud-warn">⚠ Lokasi GPS tidak tersedia saat foto diambil</p>}
         <p className="ud-addr">{p.address ?? (gps ? '' : 'Alamat tidak tersedia')}</p>
+        {p.lat !== null && p.lon !== null && (
+          <p><a className="ud-map" href={mapsUrl(p.lat, p.lon)} target="_blank" rel="noopener">
+            Lihat titik di peta ↗{p.accuracy_m !== null && <span className="ud-dim"> · akurasi ±{p.accuracy_m} m</span>}
+          </a></p>
+        )}
         <div className="ud-acts">
           <button type="button" className="btn-2 btn-sm btn-del press" onClick={onDelete}>Hapus foto</button>
         </div>

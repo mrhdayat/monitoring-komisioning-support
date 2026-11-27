@@ -50,7 +50,8 @@ export async function getPhoto(req: Request, kode: string, env: Env, ctx: Execut
 export async function checkKode(kode: string, env: Env): Promise<Response> {
   const k = normalizeKode(kode);
   const row = k && (await env.DB.prepare(
-    `SELECT p.kode_foto AS kode, u.no_lambung, p.sisi, p.captured_at_device AS captured_at, p.received_at_server AS received_at
+    `SELECT p.kode_foto AS kode, COALESCE(u.code_unit, u.no_lambung) AS no_lambung, p.sisi, p.captured_at_device AS captured_at,
+       p.received_at_server AS received_at, p.lat, p.lon, p.accuracy_m, p.address
      FROM photos p JOIN units u ON u.id = p.unit_id WHERE p.kode_foto = ?`,
   ).bind(k).first());
   return row ? json(row) : err('not_found', 404);

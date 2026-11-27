@@ -9,7 +9,7 @@ const u = (o: Partial<AdminUnit>): AdminUnit => ({
 });
 const ph = (kode: string, nama: string, nrp: string, flags = '') => ({
   kode, captured_at_device: Date.UTC(2026, 11, 1, 0, 0, 0), received_at_server: 0, clock_offset_s: 0,
-  mekanik_nama: nama, mekanik_nrp: nrp, flags, address: null, lat: null, lon: null,
+  mekanik_nama: nama, mekanik_nrp: nrp, flags, address: null, lat: null, lon: null, accuracy_m: null,
 });
 
 describe('zipName', () => {
