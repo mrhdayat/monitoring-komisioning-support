@@ -1,11 +1,38 @@
-// null bila gagal (offline, timeout, server tidak tahu alamatnya): watermark lalu memakai koordinat saja (§8).
+// Alamat = jalan dari OpenStreetMap (lewat Worker, di-cache) + kecamatan dari BigDataCloud bila OSM tidak tahu.
+// BigDataCloud "client" gratis tanpa key, tapi hanya boleh dipanggil dari browser, bukan dari server.
+// null bila keduanya gagal (offline, timeout): watermark lalu memakai koordinat saja (§8).
 export async function fetchAddress(lat: number, lon: number, timeoutMs = 3000): Promise<string | null> {
-  try {
-    const r = await fetch(`/api/geocode?lat=${lat}&lon=${lon}`, { signal: AbortSignal.timeout(timeoutMs) });
-    return r.ok ? ((await r.json()) as { address: string | null }).address : null;
-  } catch {
-    return null;
-  }
+  const get = async <T>(url: string): Promise<T | null> => {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      return r.ok ? ((await r.json()) as T) : null;
+    } catch {
+      return null;
+    }
+  };
+  const [osm, bdc] = await Promise.all([
+    get<{ address: string | null }>(`/api/geocode?lat=${lat}&lon=${lon}`),
+    get<Bdc>(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`),
+  ]);
+  return mergeAddress(osm?.address ?? null, bdc);
+}
+
+export interface Bdc { locality?: string; localityInfo?: { administrative?: { name?: string; adminLevel?: number }[] } }
+
+// Sisipkan "Kec. X" sebelum nama kabupaten/kota di alamat OSM, kecuali nama itu sudah ada di alamat OSM.
+export function mergeAddress(osm: string | null, bdc: Bdc | null): string | null {
+  const admin = (bdc?.localityInfo?.administrative ?? [])
+    .filter((a) => a.name && (a.adminLevel ?? 0) >= 4 && (a.adminLevel ?? 0) <= 5)
+    .map((a) => a.name!);
+  const loc = bdc?.locality?.trim();
+  const has = (s: string, n: string) => s.toLowerCase().includes(n.toLowerCase());
+  const kec = loc && !admin.some((n) => n.toLowerCase() === loc.toLowerCase()) ? `Kec. ${loc}` : null;
+  if (!osm) return kec || admin.length ? [kec, ...admin.slice().reverse(), 'Indonesia'].filter(Boolean).join(', ') : null;
+  if (!kec || has(osm, loc!)) return osm;
+  const parts = osm.split(', ');
+  const at = parts.findIndex((p) => admin.some((n) => has(p, n)));
+  parts.splice(at > 0 ? at : Math.max(parts.length - 2, 1), 0, kec);
+  return parts.join(', ');
 }
 
 export interface Fix { lat: number; lon: number; accuracy: number }

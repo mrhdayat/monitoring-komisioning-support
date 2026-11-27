@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { watchGps, type GpsStatus } from './geo';
+import { mergeAddress, watchGps, type GpsStatus } from './geo';
 
 type Ok = (p: { coords: { latitude: number; longitude: number; accuracy: number } }) => void;
 type Err = (e: { code: number; PERMISSION_DENIED: number }) => void;
@@ -57,4 +57,29 @@ test('fix kasar tidak menimpa fix akurat yang masih baru', () => {
   ok({ coords: { latitude: -3.4101, longitude: 115.6301, accuracy: 5 } });
   expect(g.get()).toEqual({ lat: -3.4101, lon: 115.6301, accuracy: 5 });
   g.stop();
+});
+
+const tanbu = { locality: 'Kusan Hulu', localityInfo: { administrative: [
+  { name: 'Indonesia', adminLevel: 2 }, { name: 'Kalimantan', adminLevel: 3 },
+  { name: 'Kalimantan Selatan', adminLevel: 4 }, { name: 'Tanah Bumbu', adminLevel: 5 }] } };
+
+test('mergeAddress: kecamatan disisipkan sebelum kabupaten', () => {
+  expect(mergeAddress('hauling road, Tanah Bumbu, Kalimantan Selatan, Indonesia', tanbu))
+    .toBe('hauling road, Kec. Kusan Hulu, Tanah Bumbu, Kalimantan Selatan, Indonesia');
+});
+
+test('mergeAddress: kecamatan sudah ada di OSM → OSM apa adanya', () => {
+  const osm = 'Jalan A, Kusan Hulu, Tanah Bumbu, Kalimantan Selatan, Indonesia';
+  expect(mergeAddress(osm, tanbu)).toBe(osm);
+});
+
+test('mergeAddress: OSM gagal → dari BigDataCloud saja; keduanya gagal → null', () => {
+  expect(mergeAddress(null, tanbu)).toBe('Kec. Kusan Hulu, Tanah Bumbu, Kalimantan Selatan, Indonesia');
+  expect(mergeAddress('Jalan A, Tapin', null)).toBe('Jalan A, Tapin');
+  expect(mergeAddress(null, null)).toBeNull();
+});
+
+test('mergeAddress: locality = nama kota → tidak ditambah', () => {
+  const kota = { locality: 'Banjarbaru', localityInfo: { administrative: [{ name: 'Kalimantan Selatan', adminLevel: 4 }, { name: 'Banjarbaru', adminLevel: 5 }] } };
+  expect(mergeAddress('Jalan A, Banjarbaru, Kalimantan Selatan, Indonesia', kota)).toBe('Jalan A, Banjarbaru, Kalimantan Selatan, Indonesia');
 });
