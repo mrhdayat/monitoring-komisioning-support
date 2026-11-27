@@ -21,11 +21,12 @@ export async function driveConnect(env: Env, code: string, redirectUri: string, 
   const b64 = j.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
   const email = (JSON.parse(atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, '='))) as { email?: string }).email;
   if (!email) throw new Error('email_kosong');
+  const sameAccount = (await getSetting(env, 'drive_email')) === email;
   await env.DB.batch([
     ['drive_refresh_token', j.refresh_token], ['drive_email', email], ['drive_status', 'tersambung'],
     ['drive_access_token', j.access_token], ['drive_access_exp', String(now + (j.expires_in ?? 3600) * 1000)],
-  ].map(([k, v]) => env.DB.prepare('INSERT INTO pengaturan (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v').bind(k, v))
-    .concat(env.DB.prepare("DELETE FROM pengaturan WHERE k = 'drive_root_id'"))); // folder periode lama yang tak terjangkau dibuat ulang lewat Gone
+  ].map(([k, v]) => upsert(env, k, v))
+    .concat(sameAccount ? [] : env.DB.prepare("DELETE FROM pengaturan WHERE k = 'drive_root_id'"))); // akun baru = root baru; folder periode lama yang tak terjangkau dibuat ulang lewat Gone
 }
 
 export class DriveDisconnected extends Error {}
@@ -38,8 +39,9 @@ const FOLDER = 'application/vnd.google-apps.folder';
 
 export const getSetting = async (env: Env, k: string) =>
   (await env.DB.prepare('SELECT v FROM pengaturan WHERE k = ?').bind(k).first<{ v: string }>())?.v ?? null;
-export const setSetting = (env: Env, k: string, v: string) =>
-  env.DB.prepare('INSERT INTO pengaturan (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v').bind(k, v).run();
+const upsert = (env: Env, k: string, v: string) =>
+  env.DB.prepare('INSERT INTO pengaturan (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v').bind(k, v);
+const setSetting = (env: Env, k: string, v: string) => upsert(env, k, v).run();
 
 // Access token disimpan di D1 dan dipakai ulang sampai < 5 menit tersisa. `force` = abaikan cache (setelah 401).
 export async function driveToken(env: Env, fetchImpl: typeof fetch = fetch, force = false): Promise<string> {

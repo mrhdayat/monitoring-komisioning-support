@@ -1,4 +1,4 @@
-import { err, json, readJson, type Env } from './http';
+import { err, json, randomHex, readJson, type Env } from './http';
 import { hashPassword, iterOf, PBKDF2_ITER, verifyPassword } from './password';
 
 export { PBKDF2_ITER, hashPassword, verifyPassword };
@@ -48,7 +48,7 @@ export async function login(req: Request, env: Env, now = Date.now()): Promise<R
     return err('login_gagal', 401);
   }
 
-  const token = [...crypto.getRandomValues(new Uint8Array(32))].map((x) => x.toString(16).padStart(2, '0')).join('');
+  const token = randomHex(32);
   const stmts = [
     env.DB.prepare('UPDATE admins SET failed_count = 0, locked_until = 0 WHERE id = ?').bind(a.id),
     env.DB.prepare('INSERT INTO sessions (token_hash, admin_id, expires_at) VALUES (?, ?, ?)')

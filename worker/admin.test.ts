@@ -232,6 +232,23 @@ describe('Google Drive OAuth', () => {
     expect(await setting('drive_root_id')).toBeNull();
   });
 
+  it('akun sama → drive_root_id dipertahankan; akun beda → direset', async () => {
+    await E.DB.prepare("INSERT INTO pengaturan (k, v) VALUES ('drive_root_id', 'lama'), ('drive_email', 'kantor@gmail.com')").run();
+    await go(`/api/admin/drive/kembali?code=C&state=${await startState()}`);
+    expect(await setting('drive_root_id')).toBe('lama');
+    await E.DB.prepare("UPDATE pengaturan SET v = 'lain@gmail.com' WHERE k = 'drive_email'").run();
+    await go(`/api/admin/drive/kembali?code=C&state=${await startState()}`);
+    expect(await setting('drive_root_id')).toBeNull();
+    expect(await setting('drive_email')).toBe('kantor@gmail.com');
+  });
+
+  it('state tidak berlaku → halaman HTML ramah, status tetap 400/401', async () => {
+    const r = await go('/api/admin/drive/kembali?code=C&state=salah');
+    expect([r.status, r.headers.get('content-type')]).toEqual([400, 'text/html; charset=utf-8']);
+    expect(await r.text()).toContain('Tautan penyambungan sudah tidak berlaku');
+    expect((await go('/api/admin/drive/kembali?code=C&state=x', null)).headers.get('content-type')).toContain('text/html');
+  });
+
   it('kembali menukar code dengan redirect_uri yang sama', async () => {
     let sent: URLSearchParams | undefined;
     const f = (async (_u: string, init: RequestInit) => { sent = init.body as URLSearchParams; return new Response(JSON.stringify({ access_token: 'a', refresh_token: 'r', id_token: idToken('a@b.c') })); }) as unknown as typeof fetch;

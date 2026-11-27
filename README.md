@@ -30,10 +30,12 @@ Database D1 `komisioning` sudah ada di akun Cloudflare kantor (id-nya sudah di `
 2. Siapkan Google Cloud dengan akun kerja (Google Workspace):
    1. Buat project baru di console.cloud.google.com.
    2. Aktifkan **Google Drive API** (APIs & Services, Library).
-   3. Di OAuth consent screen, pilih Audience **Internal**.
+   3. Di OAuth consent screen, pilih Audience **Internal**. Kalau Internal tidak tersedia (akun bukan Workspace), pilih **External** lalu tekan **Publish app** (In production). Izin `drive.file` tidak sensitif, jadi tidak perlu verifikasi Google. Kalau dibiarkan di Testing, token kedaluwarsa tiap 7 hari dan Drive jadi "terputus" tiap minggu.
    4. Buat OAuth client, tipe **Web application**, dengan dua Authorized redirect URI:
       - `https://komisioning.<subdomain>.workers.dev/api/admin/drive/kembali`
       - `http://localhost:5173/api/admin/drive/kembali`
+
+      Kalau memakai domain sendiri, daftarkan juga `https://<domain>/api/admin/drive/kembali`.
 
       `<subdomain>` muncul di keluaran `npm run deploy` (langkah 3), atau di dashboard Cloudflare, Workers & Pages. Kalau belum tahu, deploy dulu, lalu kembali ke sini.
    5. Catat Client ID dan Client secret.

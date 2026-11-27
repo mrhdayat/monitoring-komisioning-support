@@ -16,3 +16,5 @@ export async function readJson<T>(req: Request): Promise<T | null> {
   if (!req.headers.get('content-type')?.includes('application/json')) return null;
   try { return (await req.json()) as T; } catch { return null; }
 }
+
+export const randomHex = (bytes: number) => [...crypto.getRandomValues(new Uint8Array(bytes))].map((x) => x.toString(16).padStart(2, '0')).join('');

@@ -2,7 +2,7 @@ import { SISI, type AdminStatus, type Sisi, type SnapUnit } from '../shared/type
 import { adminStatus, purgeAfterMs } from '../shared/rules';
 import { hashPassword, requireAdmin, sha256Hex, sidOf } from './auth';
 import { driveAuthUrl, driveConnect, getSetting } from './drive';
-import { err, json, readJson, type Env } from './http';
+import { err, json, randomHex, readJson, type Env } from './http';
 import { rebuildSnapshot } from './snapshot';
 import { getStore } from './store';
 
@@ -160,6 +160,13 @@ async function admins(req: Request, env: Env, me: { id: number }, path: string, 
 
 const back = (ok: boolean) => new Response(null, { status: 302, headers: { location: `/admin/admin?drive=${ok ? 'ok' : 'gagal'}` } });
 
+// kembali/mulai dibuka sebagai tab biasa: galat berupa halaman kecil, bukan JSON mentah.
+const expired = (status: number) => new Response(
+  '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tautan tidak berlaku</title>'
+  + '<body style="font:18px/1.5 system-ui;max-width:32rem;margin:15vh auto;padding:0 16px"><p>Tautan penyambungan sudah tidak berlaku. '
+  + 'Kembali ke halaman Admin lalu tekan Sambungkan Google Drive lagi.</p><p><a href="/admin/admin">Buka halaman Admin</a></p>',
+  { status, headers: { 'content-type': 'text/html; charset=utf-8' } });
+
 async function drive(req: Request, env: Env, path: string, now: number, fetchImpl: typeof fetch) {
   const url = new URL(req.url);
   if (path === '/api/admin/drive/status') {
@@ -175,7 +182,7 @@ async function drive(req: Request, env: Env, path: string, now: number, fetchImp
   const redirectUri = `${url.origin}/api/admin/drive/kembali`;
   if (path === '/api/admin/drive/mulai') {
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return back(false);
-    const state = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+    const state = randomHex(32);
     await env.DB.batch([
       env.DB.prepare('DELETE FROM drive_state WHERE exp < ?').bind(now),
       env.DB.prepare('INSERT INTO drive_state (state_hash, token_hash, exp) VALUES (?, ?, ?)').bind(await sha256Hex(state), th, now + 600_000),
@@ -187,7 +194,7 @@ async function drive(req: Request, env: Env, path: string, now: number, fetchImp
     // Sekali pakai: DELETE atomik, hanya cocok bila state milik sesi ini dan belum kedaluwarsa.
     const used = state && await env.DB.prepare('DELETE FROM drive_state WHERE state_hash = ? AND token_hash = ? AND exp > ? RETURNING 1')
       .bind(await sha256Hex(state), th, now).first();
-    if (!used) return err('state_tidak_valid', 400);
+    if (!used) return expired(400);
     const code = url.searchParams.get('code');
     if (!code) return back(false); // izin ditolak di Google
     try { await driveConnect(env, code, redirectUri, now, fetchImpl); } catch { return back(false); }
@@ -198,8 +205,8 @@ async function drive(req: Request, env: Env, path: string, now: number, fetchImp
 
 export async function handleAdmin(req: Request, env: Env, now = Date.now(), fetchImpl: typeof fetch = fetch): Promise<Response> {
   const me = await requireAdmin(req, env, now);
-  if (!me) return err('unauthorized', 401);
   const path = new URL(req.url).pathname;
+  if (!me) return path.startsWith('/api/admin/drive/') && path !== '/api/admin/drive/status' ? expired(401) : err('unauthorized', 401);
   const { method } = req;
   if (path === '/api/admin/import' && method === 'POST') return importBatch(req, env, now);
   if (path === '/api/admin/import/finish' && method === 'POST') return finish(req, env, now);
