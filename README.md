@@ -16,30 +16,29 @@ npm run dev                            # http://localhost:5173
 
 - Admin: `/admin/login`. Mekanik: `/` di layar HP (lebar < 1024 px). Di layar lebar, `/` menampilkan halaman publik.
 - Tes: `npm test`. Cek tipe: `npx tsc -b`.
-- Untuk mencoba alur Google Drive di komputer sendiri, ubah `.dev.vars` menjadi `STORAGE=drive` dan tambahkan `GOOGLE_CLIENT_ID=...` dan `GOOGLE_CLIENT_SECRET=...` (isinya dari langkah 2 di bawah). Jangan commit `.dev.vars`.
+- Untuk mencoba alur Google Drive di komputer sendiri, ubah `.dev.vars` menjadi `STORAGE=drive` dan tambahkan `GOOGLE_CLIENT_ID=...` dan `GOOGLE_CLIENT_SECRET=...` (isinya dari langkah 3 di bawah). Jangan commit `.dev.vars`.
 
 ## Deploy
 
-Database D1 `komisioning` sudah ada di akun Cloudflare kantor (id-nya sudah di `wrangler.jsonc`). R2 tidak dipakai lagi.
+Database D1 `komisioning` sudah ada di akun Cloudflare kantor (id-nya sudah di `wrangler.jsonc`). R2 tidak dipakai lagi. Ikuti langkah berurutan ini.
 
-1. Masuk ke Cloudflare dan jalankan migrasi (aman diulang):
+1. Masuk ke Cloudflare, lihat migrasi yang belum jalan, lalu jalankan (aman diulang):
    ```sh
    npx wrangler login
+   npx wrangler d1 migrations list komisioning --remote
    npx wrangler d1 migrations apply komisioning --remote
    ```
-2. Siapkan Google Cloud dengan akun kerja (Google Workspace):
+2. Deploy: `npm run deploy`. Catat alamat yang muncul, `https://komisioning.<subdomain>.workers.dev`. Alamat ini juga ada di dashboard Cloudflare, Workers & Pages.
+3. Siapkan Google Cloud dengan akun kerja (Google Workspace):
    1. Buat project baru di console.cloud.google.com.
    2. Aktifkan **Google Drive API** (APIs & Services, Library).
    3. Di OAuth consent screen, pilih Audience **Internal**. Kalau Internal tidak tersedia (akun bukan Workspace), pilih **External** lalu tekan **Publish app** (In production). Izin `drive.file` tidak sensitif, jadi tidak perlu verifikasi Google. Kalau dibiarkan di Testing, token kedaluwarsa tiap 7 hari dan Drive jadi "terputus" tiap minggu.
    4. Buat OAuth client, tipe **Web application**, dengan dua Authorized redirect URI:
-      - `https://komisioning.<subdomain>.workers.dev/api/admin/drive/kembali`
+      - `https://komisioning.<subdomain>.workers.dev/api/admin/drive/kembali` (alamat dari langkah 2)
       - `http://localhost:5173/api/admin/drive/kembali`
 
       Kalau memakai domain sendiri, daftarkan juga `https://<domain>/api/admin/drive/kembali`.
-
-      `<subdomain>` muncul di keluaran `npm run deploy` (langkah 3), atau di dashboard Cloudflare, Workers & Pages. Kalau belum tahu, deploy dulu, lalu kembali ke sini.
    5. Catat Client ID dan Client secret.
-3. Deploy: `npm run deploy`. Aplikasi ada di `https://komisioning.<subdomain>.workers.dev`.
 4. Simpan kunci Google di Cloudflare. Tempel nilainya saat diminta, jangan ditulis di file atau chat:
    ```sh
    npx wrangler secret put GOOGLE_CLIENT_ID

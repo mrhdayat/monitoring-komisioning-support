@@ -32,7 +32,9 @@ export async function getPhoto(req: Request, kode: string, env: Env, ctx: Execut
   if (hit) return hit;
   let obj: Response | null | undefined;
   try {
-    obj = await (await getStore(env))?.get(row.r2_key);
+    const store = await getStore(env);
+    if (!store) return err('penyimpanan_belum_siap', 503); // Drive belum tersambung: bukan "foto hilang"
+    obj = await store.get(row.r2_key);
   } catch (e) {
     if (e instanceof DriveDisconnected) return err('penyimpanan_belum_siap', 503);
     throw e;

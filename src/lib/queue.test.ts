@@ -57,18 +57,19 @@ test('decide', () => {
   expect(decide(0, null)).toBe('ulang');
 });
 
-test('processQueue: 200 menghapus, 503 menyisakan', async () => {
+test('processQueue: 200 menghapus, 503 menyisakan dan menghentikan sisa antrean', async () => {
   await enqueue(item({ kode: 'AAAA-0001', capturedAt: 1 }));
   await enqueue(item({ kode: 'AAAA-0002', capturedAt: 2 }));
+  await enqueue(item({ kode: 'AAAA-0003', capturedAt: 3 }));
   const sent = mockFetch([200, { result: 'dipakai' }], [503, {}]);
   const r = await processQueue({ render: false });
-  expect(r).toMatchObject({ sent: 1, left: 1 });
-  expect(sent.map((s) => s.meta.kode)).toEqual(['AAAA-0001', 'AAAA-0002']);
+  expect(r).toMatchObject({ sent: 1, left: 2 });
+  expect(sent.map((s) => s.meta.kode)).toEqual(['AAAA-0001', 'AAAA-0002']); // AAAA-0003 tidak dicoba
   expect(sent[0].meta).toMatchObject({ unitId: 7, sisi: 'kanan', nama: 'Budi', nrp: '12345', address: 'Tapin' });
   expect(typeof sent[0].meta.deviceNow).toBe('number');
   const left = await listQueue();
-  expect(left.map((i) => i.kode)).toEqual(['AAAA-0002']);
-  expect(left[0].error).toBeTruthy();
+  expect(left.map((i) => i.kode)).toEqual(['AAAA-0002', 'AAAA-0003']);
+  expect(left[0].error).toBe('Penyimpanan foto belum siap. Foto aman di HP dan dikirim otomatis nanti.');
 });
 
 test('processQueue: jaringan putus menghentikan sisa antrean', async () => {

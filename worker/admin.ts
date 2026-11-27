@@ -158,7 +158,7 @@ async function admins(req: Request, env: Env, me: { id: number }, path: string, 
   return json({ ok: true });
 }
 
-const back = (ok: boolean) => new Response(null, { status: 302, headers: { location: `/admin/admin?drive=${ok ? 'ok' : 'gagal'}` } });
+const back = (r: 'ok' | 'gagal' | 'belum-diatur') => new Response(null, { status: 302, headers: { location: `/admin/admin?drive=${r}` } });
 
 // kembali/mulai dibuka sebagai tab biasa: galat berupa halaman kecil, bukan JSON mentah.
 const expired = (status: number) => new Response(
@@ -181,7 +181,7 @@ async function drive(req: Request, env: Env, path: string, now: number, fetchImp
   const th = await sha256Hex(sidOf(req)!); // requireAdmin sudah memastikan cookie sid ada
   const redirectUri = `${url.origin}/api/admin/drive/kembali`;
   if (path === '/api/admin/drive/mulai') {
-    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return back(false);
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return back('belum-diatur');
     const state = randomHex(32);
     await env.DB.batch([
       env.DB.prepare('DELETE FROM drive_state WHERE exp < ?').bind(now),
@@ -196,9 +196,9 @@ async function drive(req: Request, env: Env, path: string, now: number, fetchImp
       .bind(await sha256Hex(state), th, now).first();
     if (!used) return expired(400);
     const code = url.searchParams.get('code');
-    if (!code) return back(false); // izin ditolak di Google
-    try { await driveConnect(env, code, redirectUri, now, fetchImpl); } catch { return back(false); }
-    return back(true);
+    if (!code) return back('gagal'); // izin ditolak di Google
+    try { await driveConnect(env, code, redirectUri, now, fetchImpl); } catch { return back('gagal'); }
+    return back('ok');
   }
   return err('not_found', 404);
 }

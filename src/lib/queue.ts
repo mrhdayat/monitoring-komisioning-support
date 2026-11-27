@@ -113,8 +113,9 @@ async function run(render: boolean): Promise<Hasil> {
     } else if (d === 'tahan') {
       await set(it.kode, { ...it, held: true, error: 'Data foto ditolak server, hubungi admin' }, queueStore);
     } else {
-      await set(it.kode, { ...it, error: r.status ? `Server bermasalah (${r.status})` : 'Menunggu sinyal' }, queueStore);
-      if (!r.status) { changed(); break; } // offline: sisa antrean pasti gagal juga
+      const siap = r.status !== 503;
+      await set(it.kode, { ...it, error: !siap ? 'Penyimpanan foto belum siap. Foto aman di HP dan dikirim otomatis nanti.' : r.status ? `Server bermasalah (${r.status})` : 'Menunggu sinyal' }, queueStore);
+      if (!r.status || !siap) { changed(); break; } // offline atau penyimpanan belum siap: sisa antrean pasti gagal juga
     }
     changed();
   }

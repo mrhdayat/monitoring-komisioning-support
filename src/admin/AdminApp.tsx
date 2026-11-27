@@ -75,9 +75,11 @@ export default function AdminApp() {
       </aside>
       <main className="adm-main">
         <div className="hazard" aria-hidden="true" />
-        {drive?.storage === 'drive' && drive.status === 'terputus' && (
+        {drive?.storage === 'drive' && drive.status !== 'tersambung' && (
           <p className="adm-warn" role="alert">
-            Google Drive terputus. Foto baru tertahan di HP mekanik sampai disambungkan ulang.{' '}
+            {drive.status === 'terputus'
+              ? 'Google Drive terputus. Foto baru tertahan di HP mekanik sampai disambungkan ulang.'
+              : 'Google Drive belum disambungkan. Foto dari mekanik tertahan di HP sampai disambungkan. Buka menu Admin → Sambungkan Google Drive.'}{' '}
             {tab !== 'admin' && <a href="/admin/admin" onClick={(e) => { e.preventDefault(); navigate('/admin/admin'); }}>Buka pengaturan</a>}
           </p>
         )}

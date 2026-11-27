@@ -214,9 +214,9 @@ describe('Google Drive OAuth', () => {
     expect(u.searchParams.get('state')).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('mulai tanpa client id/secret → /admin/admin?drive=gagal', async () => {
+  it('mulai tanpa client id/secret → /admin/admin?drive=belum-diatur', async () => {
     const r = await go('/api/admin/drive/mulai', cookie, E);
-    expect([r.status, r.headers.get('location')]).toEqual([302, '/admin/admin?drive=gagal']);
+    expect([r.status, r.headers.get('location')]).toEqual([302, '/admin/admin?drive=belum-diatur']);
   });
 
   it('kembali dengan state benar → token + email tersimpan, root direset, ?drive=ok', async () => {

@@ -235,4 +235,14 @@ describe('getPhoto dengan Drive', () => {
     await waitOnExecutionContext(ctx);
     expect([r.status, await r.json()]).toEqual([503, { error: 'penyimpanan_belum_siap' }]);
   });
+
+  it('Drive belum pernah tersambung saat ambil foto → 503, bukan 404', async () => {
+    await env.DB.prepare("INSERT INTO units (id,period_id,no_lambung,perusahaan,kelompok_unit,jenis_unit,berlaku_akhir,week,status_she) VALUES (1,1,'x','p','k','j','2999-01-01','W1','Belum Diajukan')").run();
+    await env.DB.prepare("INSERT INTO photos (unit_id,sisi,kode_foto,r2_key,captured_at_device,captured_at_corrected,received_at_server,clock_offset_s,mekanik_nama,mekanik_nrp) VALUES (1,'depan','AB1C-D2EF','kbelum',1,1,1,0,'B','1')").run();
+    await env.DB.prepare('DELETE FROM pengaturan').run();
+    const ctx = createExecutionContext();
+    const r = await getPhoto(new Request('https://x/api/photo/AB1C-D2EF'), 'AB1C-D2EF', e, ctx);
+    await waitOnExecutionContext(ctx);
+    expect([r.status, await r.json()]).toEqual([503, { error: 'penyimpanan_belum_siap' }]);
+  });
 });

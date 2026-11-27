@@ -11,6 +11,7 @@ const tgl = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', day: '
 const DRIVE_MSG: Record<string, string> = {
   ok: 'Google Drive tersambung. Foto baru akan disimpan di sana.',
   gagal: 'Google Drive belum tersambung. Coba lagi, dan pastikan memilih Izinkan di halaman Google.',
+  'belum-diatur': 'Kunci Google belum dipasang di server. Jalankan wrangler secret put GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET (lihat README).',
 };
 
 function DrivePanel({ info }: { info: DriveInfo | null }) {
@@ -34,9 +35,10 @@ function DrivePanel({ info }: { info: DriveInfo | null }) {
           <a className={`${info.status === 'tersambung' ? 'btn-2' : 'btn'} btn-sm press ad-drive-go`} href="/api/admin/drive/mulai">
             {info.status === 'tersambung' ? 'Ganti akun' : 'Sambungkan Google Drive'}
           </a>
+          {info.status === 'tersambung' && <p className="ad-drive-note">Ganti akun: foto lama tetap di Drive akun lama dan tidak bisa ditampilkan dari aplikasi.</p>}
         </>
       )}
-      {flash && DRIVE_MSG[flash] && <p className={`ad-drive-msg${flash === 'gagal' ? ' ad-drive-bad' : ''}`} role="status">{DRIVE_MSG[flash]}</p>}
+      {flash && DRIVE_MSG[flash] && <p className={`ad-drive-msg${flash !== 'ok' ? ' ad-drive-bad' : ''}`} role="status">{DRIVE_MSG[flash]}</p>}
     </section>
   );
 }
