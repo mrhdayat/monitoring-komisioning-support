@@ -11,12 +11,17 @@ export async function purgeExpired(env: Env, now: number, maxPeriods = 10): Prom
   const store = await getStore(env);
   if (!store) return { periods: 0, photos: 0 }; // Drive belum tersambung: coba lagi besok, jangan tandai purged.
   let photos = 0;
-  for (const { id } of periods) {
-    await store.trashPeriod(id);
-    const r = await env.DB.prepare('DELETE FROM photos WHERE unit_id IN (SELECT id FROM units WHERE period_id = ?)').bind(id).run();
-    photos += r.meta.changes;
-    await env.DB.prepare('UPDATE periods SET purged_at = ? WHERE id = ?').bind(now, id).run();
+  let done = 0;
+  try {
+    for (const { id } of periods) {
+      await store.trashPeriod(id);
+      const r = await env.DB.prepare('DELETE FROM photos WHERE unit_id IN (SELECT id FROM units WHERE period_id = ?)').bind(id).run();
+      photos += r.meta.changes;
+      await env.DB.prepare('UPDATE periods SET purged_at = ? WHERE id = ?').bind(now, id).run();
+      done++;
+    }
+  } finally {
+    if (done) await rebuildSnapshot(env, now); // periode yang sudah ter-purge tetap hilang dari snapshot walau periode berikutnya gagal
   }
-  await rebuildSnapshot(env, now);
-  return { periods: periods.length, photos };
+  return { periods: done, photos };
 }

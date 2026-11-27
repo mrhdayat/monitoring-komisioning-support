@@ -65,14 +65,17 @@ describe('public', () => {
     expect((await SELF.fetch('https://x/api/photo/bad')).status).toBe(404);
   });
 
-  it('photo: respons 200 masuk cache tepi dan dilayani ulang tanpa store', async () => {
+  it('photo: dilayani dari cache tepi; kunci kanonik (query/huruf kode tak membedakan); baris dihapus → 404', async () => {
     await env.DB.prepare("INSERT INTO berkas_dev (id, data) VALUES ('foto/AB1C-D2EF.jpg', x'ffd8ff')").run();
-    const url = 'https://x/api/photo/AB1C-D2EF?cache-uji=1';
-    expect((await SELF.fetch(url)).status).toBe(200);
-    await env.DB.prepare('DELETE FROM berkas_dev').run();
-    const r = await SELF.fetch(url);
-    expect(r.status).toBe(200);
-    expect(new Uint8Array(await r.arrayBuffer())).toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+    expect((await SELF.fetch('https://x/api/photo/AB1C-D2EF')).status).toBe(200);
+    await env.DB.prepare('DELETE FROM berkas_dev').run(); // store kosong: hanya cache yang bisa menjawab
+    for (const u of ['https://x/api/photo/AB1C-D2EF?x=1', 'https://x/api/photo/ab1c-d2ef?x=2']) {
+      const r = await SELF.fetch(u);
+      expect(r.status).toBe(200);
+      expect(new Uint8Array(await r.arrayBuffer())).toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+    }
+    await env.DB.prepare('DELETE FROM photos').run();
+    expect((await SELF.fetch('https://x/api/photo/AB1C-D2EF')).status).toBe(404);
   });
 
   it('geocode: cache hit & param invalid', async () => {

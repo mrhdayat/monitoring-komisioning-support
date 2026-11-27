@@ -2,9 +2,11 @@ import type { Env } from './http';
 import type { Store } from './store';
 
 export class DriveDisconnected extends Error {}
+// Folder induk hilang/di-trash di Drive: id tersimpan sudah dibersihkan, put() mengulang sekali.
+class Gone extends Error {}
 
 const API = 'https://www.googleapis.com/drive/v3/files';
-const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id';
+const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,trashed';
 const FOLDER = 'application/vnd.google-apps.folder';
 
 const getSetting = async (env: Env, k: string) =>
@@ -41,18 +43,22 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
     const send = async (force: boolean) =>
       fetchImpl(url, { ...init, headers: { ...(init.headers as object), Authorization: `Bearer ${await driveToken(env, fetchImpl, force)}` } });
     const r = await send(false);
-    return r.status === 401 ? send(true) : r;
+    if (r.status !== 401) return r;
+    await r.body?.cancel();
+    return send(true);
   };
   const ok = async (r: Response, what: string) => {
-    if (!r.ok) throw new Error(`drive_${what}_${r.status}`);
+    if (!r.ok) throw Object.assign(new Error(`drive_${what}_${r.status}`), { status: r.status });
     return r;
   };
   const mkFolder = async (name: string, parent?: string) => {
-    const r = await ok(await call(`${API}?fields=id`, {
+    const r = await ok(await call(`${API}?fields=id,trashed`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name, mimeType: FOLDER, ...(parent && { parents: [parent] }) }),
     }), 'folder');
-    return ((await r.json()) as { id: string }).id;
+    const j = (await r.json()) as { id: string; trashed?: boolean };
+    if (j.trashed) { await delFile(j.id); throw new Gone(); } // induknya di tempat sampah
+    return j.id;
   };
   const delFile = async (id: string) => {
     const r = await call(`${API}/${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -63,7 +69,7 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
   const rootId = async () => {
     const have = await getSetting(env, 'drive_root_id');
     if (have) return have;
-    const mine = await mkFolder('Komisioning');
+    const mine = await mkFolder('Komisioning'); // ponytail: root yang di-trash (bukan dihapus) tidak terdeteksi sampai upload pertama ke dalamnya; ditangkap lewat `trashed` di respons upload.
     await env.DB.prepare("INSERT INTO pengaturan (k, v) VALUES ('drive_root_id', ?) ON CONFLICT (k) DO NOTHING").bind(mine).run();
     const won = (await getSetting(env, 'drive_root_id'))!;
     if (won !== mine) await delFile(mine);
@@ -74,24 +80,51 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
       .first<{ label: string; drive_folder_id: string | null }>();
     if (!p) throw new Error('periode_tidak_ada');
     if (p.drive_folder_id) return p.drive_folder_id;
-    const mine = await mkFolder(p.label.replace(/\//g, '-'), await rootId());
+    const root = await rootId();
+    let mine: string;
+    try {
+      mine = await mkFolder(p.label.replace(/\//g, '-'), root);
+    } catch (e) {
+      if ((e as { status?: number }).status === 404 || e instanceof Gone) {
+        await env.DB.prepare("DELETE FROM pengaturan WHERE k = 'drive_root_id' AND v = ?").bind(root).run();
+        throw new Gone();
+      }
+      throw e;
+    }
     const claim = await env.DB.prepare('UPDATE periods SET drive_folder_id = ? WHERE id = ? AND drive_folder_id IS NULL').bind(mine, periodId).run();
     if (claim.meta.changes) return mine;
     await delFile(mine);
     return (await env.DB.prepare('SELECT drive_folder_id FROM periods WHERE id = ?').bind(periodId).first<{ drive_folder_id: string }>())!.drive_folder_id;
   };
 
+  const putOnce = async ({ name, periodId, bytes }: { name: string; periodId: number; bytes: Uint8Array }) => {
+    const parent = await periodFolder(periodId);
+    const b = `b${crypto.randomUUID()}`;
+    const body = new Blob([
+      `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+      JSON.stringify({ name, parents: [parent], mimeType: 'image/jpeg' }),
+      `\r\n--${b}\r\nContent-Type: image/jpeg\r\n\r\n`, bytes, `\r\n--${b}--`,
+    ]);
+    const r = await call(UPLOAD, { method: 'POST', headers: { 'content-type': `multipart/related; boundary=${b}` }, body });
+    const j = r.ok ? ((await r.json()) as { id: string; trashed?: boolean }) : null;
+    // `trashed` di respons = berkas ikut tempat sampah karena foldernya di-trash: tanpa GET tambahan per upload.
+    if (r.status === 404 || j?.trashed) {
+      if (j) await delFile(j.id);
+      await env.DB.prepare('UPDATE periods SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(periodId, parent).run();
+      throw new Gone();
+    }
+    await ok(r, 'upload');
+    return j!.id;
+  };
+
   return {
-    async put({ name, periodId, bytes }) {
-      const parent = await periodFolder(periodId);
-      const b = `b${crypto.randomUUID()}`;
-      const body = new Blob([
-        `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
-        JSON.stringify({ name, parents: [parent], mimeType: 'image/jpeg' }),
-        `\r\n--${b}\r\nContent-Type: image/jpeg\r\n\r\n`, bytes, `\r\n--${b}--`,
-      ]);
-      const r = await ok(await call(UPLOAD, { method: 'POST', headers: { 'content-type': `multipart/related; boundary=${b}` }, body }), 'upload');
-      return ((await r.json()) as { id: string }).id;
+    async put(f) {
+      try {
+        return await putOnce(f);
+      } catch (e) {
+        if (e instanceof Gone) return putOnce(f); // sekali saja; gagal lagi → error biasa
+        throw e;
+      }
     },
     async get(id) {
       const r = await call(`${API}/${encodeURIComponent(id)}?alt=media`);

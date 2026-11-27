@@ -1,6 +1,7 @@
 import type { Sisi, Snapshot, SnapUnit } from '../shared/types';
 import type { Env } from './http';
 
+// ponytail: snapshot satu nilai D1 (batas ±2 MB ≈ 5 ribu unit); pecah per periode bila melewati itu.
 // ponytail: rebuild bersamaan bisa menulis snapshot sedikit tertinggal; rebuild berikutnya membetulkan.
 export async function rebuildSnapshot(env: Env, now = Date.now()): Promise<void> {
   const [periods, rows] = await env.DB.batch([

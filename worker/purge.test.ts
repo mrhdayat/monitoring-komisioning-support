@@ -1,5 +1,5 @@
 import { createExecutionContext, env, waitOnExecutionContext } from 'cloudflare:test';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Env } from './http';
 import { purgeExpired } from './purge';
 import { handleUpload } from './upload';
@@ -26,6 +26,8 @@ beforeEach(async () => {
   for (const k of ['AAAA-0001', 'AAAA-0002', 'BBBB-0001'])
     await env.DB.prepare('INSERT INTO berkas_dev (id, data) VALUES (?, ?)').bind(`foto/${k}.jpg`, JPEG).run();
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('purgeExpired', () => {
   it('periode lewat purge_after: berkas & photos dihapus, unit tetap, purged_at terisi', async () => {
@@ -70,5 +72,19 @@ describe('purgeExpired', () => {
   it('Store null: tidak ada yang ditandai purged', async () => {
     expect(await purgeExpired({ ...env, STORAGE: 'drive' } as Env, NOW)).toEqual({ periods: 0, photos: 0 });
     expect(await count('photos')).toBe(3);
+  });
+
+  it('trashPeriod gagal di periode berikutnya: periode yang sudah ter-purge tetap keluar dari snapshot', async () => {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO periods (id,label,uploaded_at,purge_after) VALUES (3,'Lama2',1,100)"), unit(3, 3),
+      env.DB.prepare("UPDATE periods SET drive_folder_id = 'f' || id"),
+      env.DB.prepare("INSERT OR REPLACE INTO pengaturan (k,v) VALUES ('drive_refresh_token','rt'),('drive_access_token','t'),('drive_access_exp','9e15')"),
+    ]);
+    vi.stubGlobal('fetch', async (url: string) => new Response('', { status: url.endsWith('/f3') ? 500 : 200 }));
+    const e = { ...env, STORAGE: 'drive', GOOGLE_CLIENT_ID: 'c', GOOGLE_CLIENT_SECRET: 's' } as Env;
+    await expect(purgeExpired(e, NOW)).rejects.toThrow();
+    expect((await env.DB.prepare('SELECT purged_at p FROM periods WHERE id=1').first<{ p: number | null }>())!.p).toBe(NOW);
+    const snap = JSON.parse((await env.DB.prepare('SELECT json FROM snapshot WHERE id=1').first<{ json: string }>())!.json);
+    expect(snap.periods.map((p: { id: number }) => p.id)).not.toContain(1);
   });
 });

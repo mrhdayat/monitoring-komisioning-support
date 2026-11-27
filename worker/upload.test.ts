@@ -51,7 +51,7 @@ beforeEach(async () => {
 });
 
 describe('upload', () => {
-  it('foto pertama → dipakai, berkas ada di R2', async () => {
+  it('foto pertama → dipakai, berkas tersimpan', async () => {
     expect(await send({})).toEqual({ status: 200, body: { result: 'dipakai' } });
     expect(await inStore('AAAA-0001')).toBe(true);
     const [r] = await rows();

@@ -1,4 +1,5 @@
 import { normalizeKode } from '../shared/kode';
+import { DriveDisconnected } from './drive';
 import { err, json, type Env } from './http';
 import { rebuildSnapshot } from './snapshot';
 import { getStore } from './store';
@@ -22,17 +23,25 @@ export async function getSnapshot(req: Request, env: Env): Promise<Response> {
 }
 
 export async function getPhoto(req: Request, kode: string, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const cache = caches.default;
-  const hit = await cache.match(req);
-  if (hit) return hit;
   const k = normalizeKode(kode);
   const row = k && (await env.DB.prepare('SELECT r2_key FROM photos WHERE kode_foto = ?').bind(k).first<{ r2_key: string }>());
-  const obj = row && (await (await getStore(env))?.get(row.r2_key));
+  if (!row) return err('not_found', 404); // baris D1 = sumber kebenaran: foto terhapus/terganti tak dilayani dari cache
+  // Kunci cache kanonik dari ID berkas: tanpa query string, tanpa beda huruf besar/kecil kode.
+  const key = new Request(`${new URL(req.url).origin}/api/photo-cache/${encodeURIComponent(row.r2_key)}`);
+  const hit = await caches.default.match(key);
+  if (hit) return hit;
+  let obj: Response | null | undefined;
+  try {
+    obj = await (await getStore(env))?.get(row.r2_key);
+  } catch (e) {
+    if (e instanceof DriveDisconnected) return err('penyimpanan_belum_siap', 503);
+    throw e;
+  }
   if (!obj) return err('not_found', 404);
   const res = new Response(obj.body, {
     headers: { 'content-type': 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable' },
   });
-  ctx.waitUntil(cache.put(req, res.clone()));
+  ctx.waitUntil(caches.default.put(key, res.clone()));
   return res;
 }
 

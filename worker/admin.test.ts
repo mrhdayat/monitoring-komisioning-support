@@ -97,7 +97,7 @@ describe('admin', () => {
     expect(body.periods[0]).toMatchObject({ label: 'Des/2026', purged_at: null });
   });
 
-  it('hapus foto → baris & R2 hilang, snapshot diperbarui', async () => {
+  it('hapus foto → baris & berkas hilang, snapshot diperbarui', async () => {
     await imp([U('A 1')]);
     const u = await E.DB.prepare('SELECT id FROM units').first<{ id: number }>();
     await photo(u!.id, 'depan', 'AAAA-0001');

@@ -99,6 +99,34 @@ describe('driveStore', () => {
     expect(bad.calls.filter((c) => c.url.includes('/upload/'))).toHaveLength(2);
   });
 
+  it('folder periode hilang (upload 404) → id dibersihkan, folder dibuat ulang, upload diulang sekali', async () => {
+    await set('drive_root_id', 'root');
+    await env.DB.prepare("UPDATE periods SET drive_folder_id = 'lama'").run();
+    const { f, calls } = fake((c) => (c.url.includes('/upload/') && calls.filter((x) => x.url.includes('/upload/')).length === 1 ? new Response('', { status: 404 }) : undefined));
+    await driveStore(e, f).put({ name: 'a', periodId: 1, bytes: new Uint8Array([1]) });
+    expect(calls.filter((c) => c.url.includes('/upload/'))).toHaveLength(2);
+    expect((await env.DB.prepare('SELECT drive_folder_id v FROM periods').first<any>()).v).toMatch(/^id/);
+  });
+
+  it('root hilang (404 saat buat folder periode) → root dibuat ulang', async () => {
+    await set('drive_root_id', 'rootlama');
+    const { f, calls } = fake((c) => (c.body?.parents?.[0] === 'rootlama' ? new Response('', { status: 404 }) : undefined));
+    await driveStore(e, f).put({ name: 'a', periodId: 1, bytes: new Uint8Array([1]) });
+    expect(await setting('drive_root_id')).not.toBe('rootlama');
+    expect(calls.filter((c) => c.url.includes('/upload/'))).toHaveLength(1);
+  });
+
+  it('upload masuk folder yang di-trash (trashed:true) → berkas dibuang, folder dibuat ulang, diulang', async () => {
+    await set('drive_root_id', 'root');
+    await env.DB.prepare("UPDATE periods SET drive_folder_id = 'sampah'").run();
+    let n = 0;
+    const { f, calls } = fake((c) => (c.url.includes('/upload/') && ++n === 1 ? jres({ id: 'x1', trashed: true }) : undefined));
+    const id = await driveStore(e, f).put({ name: 'a', periodId: 1, bytes: new Uint8Array([1]) });
+    expect(id).not.toBe('x1');
+    expect(calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/x1'))).toBe(true);
+    expect((await env.DB.prepare('SELECT drive_folder_id v FROM periods').first<any>()).v).not.toBe('sampah');
+  });
+
   it('klaim folder bersamaan: yang kalah menghapus folder buatannya', async () => {
     await set('drive_root_id', 'root');
     const { f, calls } = fake(async (c): Promise<Response | undefined> => {
@@ -196,5 +224,15 @@ describe('getPhoto dengan Drive', () => {
     const r = await getPhoto(new Request('https://x/api/photo/AB1C-D2EF?u=404'), 'AB1C-D2EF', e, ctx);
     await waitOnExecutionContext(ctx);
     expect(r.status).toBe(404);
+  });
+
+  it('Drive terputus saat ambil foto → 503, bukan 500', async () => {
+    await env.DB.prepare("INSERT INTO units (id,period_id,no_lambung,perusahaan,kelompok_unit,jenis_unit,berlaku_akhir,week,status_she) VALUES (1,1,'x','p','k','j','2999-01-01','W1','Belum Diajukan')").run();
+    await env.DB.prepare("INSERT INTO photos (unit_id,sisi,kode_foto,r2_key,captured_at_device,captured_at_corrected,received_at_server,clock_offset_s,mekanik_nama,mekanik_nrp) VALUES (1,'depan','AB1C-D2EF','k503',1,1,1,0,'B','1')").run();
+    vi.stubGlobal('fetch', fake(() => jres({ error: 'invalid_grant' }, 400)).f);
+    const ctx = createExecutionContext();
+    const r = await getPhoto(new Request('https://x/api/photo/AB1C-D2EF'), 'AB1C-D2EF', e, ctx);
+    await waitOnExecutionContext(ctx);
+    expect([r.status, await r.json()]).toEqual([503, { error: 'penyimpanan_belum_siap' }]);
   });
 });
