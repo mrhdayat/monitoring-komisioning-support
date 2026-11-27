@@ -168,9 +168,7 @@ describe('admin', () => {
     });
 
     it('2000 baris sekaligus', async () => {
-      const t = performance.now();
       expect((await put(Array.from({ length: 2000 }, (_, i) => P(`C${i}`)))).body).toEqual({ count: 2000 });
-      console.log('PUT 2000 baris ms:', Math.round(performance.now() - t));
       expect((await call('GET', '/api/admin/populasi')).body.units).toHaveLength(2000);
     });
 

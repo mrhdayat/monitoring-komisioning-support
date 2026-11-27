@@ -35,3 +35,10 @@ export function parsePopulasi(wb: XLSX.WorkBook): { units: PopUnit[]; errors: st
   }
   return { units: [], errors: ['Kolom TYPE UNIT, SECTION, MAINTENANCE BY, CODE UNIT, SKR BIB tidak ditemukan'] };
 }
+
+// File asli 9 MB dengan sheet sampai kolom XDZ: membaca semua sheet ~13 dtk, jadi baca sheet utama saja dulu.
+export async function readPopulasiFile(file: File): Promise<{ units: PopUnit[]; errors: string[] }> {
+  const buf = await file.arrayBuffer();
+  const first = parsePopulasi(XLSX.read(buf, { sheets: ['PPA & AMM - Active'], dense: true }));
+  return first.units.length ? first : parsePopulasi(XLSX.read(buf, { dense: true }));
+}

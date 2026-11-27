@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SISI, type AdminPeriod, type AdminUnit } from '../../shared/types';
+import { unitLabel } from '../../shared/populasi';
 import { navigate } from '../router';
 import { Pill } from '../ui/Pill';
 import { adminFetch } from './api';
@@ -12,7 +13,7 @@ export { waText };
 
 const STATUS: { id: StatusFilter; label: string }[] = [
   { id: 'semua', label: 'Semua' }, { id: 'belum', label: 'Belum' }, { id: 'sebagian', label: 'Sebagian' },
-  { id: 'lengkap', label: 'Lengkap' }, { id: 'cek', label: '⚠ Perlu cek' },
+  { id: 'lengkap', label: 'Lengkap' }, { id: 'cek', label: '⚠ Perlu cek' }, { id: 'pop', label: 'Perlu cek populasi' },
 ];
 const expFmt = new Intl.DateTimeFormat('id-ID', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' });
 const expText = (d: string) => expFmt.format(Date.parse(`${d}T00:00:00Z`));
@@ -32,6 +33,8 @@ function Chip({ u }: { u: AdminUnit }) {
       )}
       {u.status === 'lewat_expired' && <span className="badge badge-late">Lewat expired{n > 0 && ` · ${n}/4`}</span>}
       {u.perluCek && <span className="badge badge-cek">⚠ Perlu cek</span>}
+      {u.pop_status === 'tidak_ada' && <span className="badge badge-pop">Tidak ada di populasi</span>}
+      {u.pop_status === 'ganda' && <span className="badge badge-pop">Nama ganda</span>}
     </span>
   );
 }
@@ -130,7 +133,7 @@ export default function UnitTable() {
           </p>
         ))}
         <div className="ut-bar">
-          <input type="search" className="ut-search" placeholder="Cari no lambung" aria-label="Cari no lambung" value={f.q} onChange={(e) => set({ q: e.target.value })} />
+          <input type="search" className="ut-search" placeholder="Cari code unit atau no lambung" aria-label="Cari code unit atau no lambung" value={f.q} onChange={(e) => set({ q: e.target.value })} />
           <select aria-label="Periode" value={f.periodId} onChange={(e) => set({ periodId: Number(e.target.value) })}>
             <option value={0}>Semua periode</option>
             {data.periods.map((p) => <option key={p.id} value={p.id}>{p.label}{p.purged_at ? ' (dihapus)' : ''}</option>)}
@@ -168,7 +171,8 @@ export default function UnitTable() {
               <li key={u.id}>
                 <button type="button" className="ut-row" aria-current={u.id === sel ? 'true' : undefined} onClick={() => setSel(u.id === sel ? null : u.id)}>
                   <span className="c-unit">
-                    <b>{u.no_lambung}</b>
+                    <b>{unitLabel(u)}</b>
+                    {u.code_unit && u.code_unit !== u.no_lambung && <small>SHE {u.no_lambung}</small>}
                     <small>{u.jenis_unit}<span className="m-only"> · {u.perusahaan}</span></small>
                     <small className="m-only">{u.period} · {u.week} · exp {expText(u.berlaku_akhir)}</small>
                     {hiddenFromMechanic(u) && <small className="ut-hid">Disembunyikan dari mekanik</small>}

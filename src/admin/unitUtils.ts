@@ -1,6 +1,6 @@
 import { SISI, type AdminPeriod, type AdminStatus, type AdminUnit } from '../../shared/types';
 
-export type StatusFilter = 'semua' | AdminStatus | 'cek';
+export type StatusFilter = 'semua' | AdminStatus | 'cek' | 'pop';
 export interface Filters { status: StatusFilter; q: string; periodId: number; week: string; hidden: boolean }
 
 const DAY = 86_400_000;
@@ -21,8 +21,8 @@ export function filterUnits(units: AdminUnit[], f: Filters): AdminUnit[] {
     (f.hidden || !hiddenFromMechanic(u)) &&
     (!f.periodId || u.period_id === f.periodId) &&
     (!f.week || u.week === f.week) &&
-    (f.status === 'semua' || (f.status === 'cek' ? u.perluCek : u.status === f.status)) &&
-    (!q || norm(u.no_lambung).includes(q)));
+    (f.status === 'semua' || (f.status === 'cek' ? u.perluCek : f.status === 'pop' ? u.pop_status !== 'cocok' : u.status === f.status)) &&
+    (!q || norm(u.no_lambung).includes(q) || norm(u.code_unit ?? '').includes(q) || norm(u.skr_bib ?? '').includes(q)));
 }
 
 const unit = (n: number, s: string) => `${n} ${s}`;

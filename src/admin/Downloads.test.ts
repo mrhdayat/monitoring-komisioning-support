@@ -26,6 +26,8 @@ describe('rekapRows', () => {
       photos: { depan: ph('A', 'Budi', '1', 'jam'), kiri: ph('B', 'Budi', '1', 'gps'), kanan: ph('C', 'Sari', '2', 'jam,gps') },
     })]);
     expect(r['No Lambung']).toBe('DT 4464');
+    expect(r['Code Unit']).toBe('');
+    expect(r['SKR BIB']).toBe('');
     expect(r['Jumlah Sisi']).toBe(3);
     expect(r['Jam Jepret Depan']).toBe('1 Des 2026, 08:00:00 WITA');
     expect(r['Jam Jepret Belakang']).toBe('');
@@ -33,6 +35,15 @@ describe('rekapRows', () => {
     expect(r['NRP']).toBe('1, 2');
     expect(r['Flag']).toBe('⚠ jam, ⚠ gps');
     expect(r['Status']).toBe('Sebagian');
+  });
+});
+
+describe('rekapRows populasi', () => {
+  it('mengisi Code Unit dan SKR BIB setelah No Lambung', () => {
+    const [r] = rekapRows([u({ code_unit: 'TL 0536', skr_bib: 'BIB-9' })]);
+    expect(r['Code Unit']).toBe('TL 0536');
+    expect(r['SKR BIB']).toBe('BIB-9');
+    expect(Object.keys(r).slice(0, 3)).toEqual(['No Lambung', 'Code Unit', 'SKR BIB']);
   });
 });
 

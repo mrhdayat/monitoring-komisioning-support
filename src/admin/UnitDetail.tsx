@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SISI, type AdminPeriod, type AdminPhoto, type AdminUnit, type Sisi } from '../../shared/types';
+import { unitLabel } from '../../shared/populasi';
 import { Sheet } from '../ui/Sheet';
 import { adminFetch } from './api';
 import DownloadButtons from './DownloadButtons';
@@ -29,10 +30,11 @@ export default function UnitDetail({ unit, period, onClose, onChanged }: {
   }
 
   return (
-    <aside className="ud" aria-label={`Detail ${unit.no_lambung}`}>
+    <aside className="ud" aria-label={`Detail ${unitLabel(unit)}`}>
       <header className="ud-head">
         <div>
-          <h2>{unit.no_lambung}</h2>
+          <h2>{unitLabel(unit)}</h2>
+          {unit.code_unit && <p>SKR BIB {unit.skr_bib || '-'} · SHE {unit.no_lambung}</p>}
           <p>{unit.jenis_unit} · {unit.perusahaan}</p>
           <p>{unit.period} · {unit.week} · expired {unit.berlaku_akhir.split('-').reverse().join('/')}</p>
         </div>

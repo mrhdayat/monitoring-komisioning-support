@@ -178,6 +178,15 @@
 .im-ok { margin-top: 16px; padding: 16px; border-radius: var(--r-sticker); background: var(--neon); color: var(--on-neon); font-size: 15px; }
 .im-ok p + p { margin-top: 4px; }
 
+/* Populasi */
+.pp-now { margin-bottom: 16px; font-size: 17px; color: var(--mut); }
+.pp-now b { margin-right: 8px; font-size: 40px; font-weight: 800; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; vertical-align: -0.06em; }
+.pp-note { margin-top: 12px; font-size: 14px; color: var(--mut); }
+.badge-pop { background: var(--surface); box-shadow: inset 0 0 0 2px var(--or); color: var(--text); }
+.im-lst { margin-top: 16px; padding: 12px 16px; border-radius: var(--r-sticker); background: var(--surface); box-shadow: inset 0 0 0 2px var(--or); font-size: 14px; }
+.im-lst ul { max-height: 200px; overflow: auto; margin: 8px 0 0; padding-left: 18px; }
+.im-sum + .im-sum { margin-top: 4px; }
+
 /* Kelola admin */
 .ad { margin-top: 16px; max-width: 640px; }
 .ad-list { margin: 0; padding: 0; list-style: none; background: var(--surface); border-radius: var(--r-sticker); overflow: hidden; }

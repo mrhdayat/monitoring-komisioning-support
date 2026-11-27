@@ -33,6 +33,15 @@ describe('filterUnits', () => {
   it('unit tersembunyi disembunyikan secara bawaan', () => expect(ids(F())).toEqual([1, 2, 3]));
   it('toggle tersembunyi menampilkan semua', () => expect(ids(F({ hidden: true }))).toEqual([1, 2, 3, 4, 5]));
   it('filter status', () => expect(ids(F({ status: 'belum' }))).toEqual([1]));
+  it('perlu cek populasi: bukan cocok', () => {
+    const us = [U({ id: 1, pop_status: 'cocok' }), U({ id: 2, pop_status: 'ganda' }), U({ id: 3 })];
+    expect(filterUnits(us, F({ status: 'pop' })).map((u) => u.id)).toEqual([2, 3]);
+  });
+  it('cari lewat code unit dan SKR BIB', () => {
+    const us = [U({ id: 1, code_unit: 'TL 0536', skr_bib: 'BIB 77' }), U({ id: 2 })];
+    expect(filterUnits(us, F({ q: 'tl0536' })).map((u) => u.id)).toEqual([1]);
+    expect(filterUnits(us, F({ q: 'bib77' })).map((u) => u.id)).toEqual([1]);
+  });
   it('perlu cek', () => expect(ids(F({ status: 'cek' }))).toEqual([2]));
   it('cari: huruf kecil dan spasi ganda/tanpa spasi', () => {
     expect(ids(F({ q: 'da  25072' }))).toEqual([2]);

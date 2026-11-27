@@ -76,8 +76,8 @@ export function parseSheRows(rows: unknown[][], popIdx?: PopIndex): Parsed {
 export const rowsFromSheet = (ws: XLSX.WorkSheet): unknown[][] =>
   XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, range: 0 });
 
-export async function readSheFile(file: File): Promise<ReturnType<typeof parseSheRows>> {
+export async function readSheFile(file: File, popIdx?: PopIndex): Promise<ReturnType<typeof parseSheRows>> {
   const wb = XLSX.read(await file.arrayBuffer());
   const ws = wb.Sheets[wb.SheetNames[0]];
-  return parseSheRows(rowsFromSheet(ws));
+  return parseSheRows(rowsFromSheet(ws), popIdx);
 }

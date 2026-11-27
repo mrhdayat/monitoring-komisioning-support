@@ -18,7 +18,7 @@ export function rekapRows(units: AdminUnit[]) {
     const ps = SISI.flatMap((s) => (u.photos[s] ? [u.photos[s]!] : []));
     const flags = new Set(ps.flatMap((p) => p.flags.split(',')));
     const row: Record<string, string | number> = {
-      'No Lambung': u.no_lambung, 'Jenis Unit': u.jenis_unit, Perusahaan: u.perusahaan, 'Berlaku Akhir': u.berlaku_akhir,
+      'No Lambung': u.no_lambung, 'Code Unit': u.code_unit ?? '', 'SKR BIB': u.skr_bib ?? '', 'Jenis Unit': u.jenis_unit, Perusahaan: u.perusahaan, 'Berlaku Akhir': u.berlaku_akhir,
       Week: u.week, Periode: u.period, Status: STATUS[u.status], 'Jumlah Sisi': ps.length,
     };
     for (const s of SISI) row[`Jam Jepret ${cap(s)}`] = u.photos[s] ? witaText(u.photos[s]!.captured_at_device) : '';

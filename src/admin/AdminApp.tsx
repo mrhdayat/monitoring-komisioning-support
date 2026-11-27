@@ -4,6 +4,7 @@ import { adminFetch } from './api';
 import Login from './Login';
 import Import from './Import';
 import UnitTable from './UnitTable';
+import Populasi from './PopulasiScreen';
 import Unduhan from './Unduhan';
 import Admins from './Admins';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -12,6 +13,7 @@ import '../styles/admin.css';
 const TABS = [
   { id: 'unit', label: 'Unit' },
   { id: 'upload', label: 'Upload Excel SHE' },
+  { id: 'populasi', label: 'Populasi' },
   { id: 'unduhan', label: 'Unduhan' },
   { id: 'admin', label: 'Admin' },
 ] as const;
@@ -71,6 +73,7 @@ export default function AdminApp() {
           <h1 className="large-title">{TABS.find((t) => t.id === tab)!.label}</h1>
           {tab === 'unit' && <UnitTable />}
           {tab === 'upload' && <Import />}
+          {tab === 'populasi' && <Populasi />}
           {tab === 'unduhan' && <Unduhan />}
           {tab === 'admin' && <Admins me={user} />}
         </div>

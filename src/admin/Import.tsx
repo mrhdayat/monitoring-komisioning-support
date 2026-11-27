@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
-import type { AdminUnit, ImportUnit } from '../../shared/types';
+import type { AdminUnit, ImportUnit, PopUnit } from '../../shared/types';
+import { buildPopIndex } from '../../shared/populasi';
 import { adminFetch } from './api';
 
 interface Group { label: string; units: ImportUnit[]; byStatus: [string, number][]; willHide: number | null }
-interface Preview { name: string; groups: Group[]; errors: string[]; totalRows: number; supportRows: number }
+interface Preview { name: string; groups: Group[]; errors: string[]; totalRows: number; supportRows: number;
+  popN: number; cocok: number; perluCek: { no_lambung: string; alasan: 'tidak_ada' | 'ganda' }[] }
 interface Done { label: string; total: number; hidden: number }
 
 const nf = new Intl.NumberFormat('id-ID');
@@ -29,8 +31,15 @@ export default function Import() {
     if (!file) return;
     setErr(''); setDone(null); setPrev(null); setReading(true);
     try {
+      // Populasi dibaca dulu: pencocokan Code Unit terjadi saat parse.
+      let pop: PopUnit[];
+      try {
+        const r = await adminFetch('/api/admin/populasi');
+        if (!r.ok) throw new Error();
+        pop = ((await r.json()) as { units: PopUnit[] }).units;
+      } catch { setErr('Populasi gagal dimuat, jadi berkas belum bisa dicek. Coba lagi.'); setReading(false); return; }
       const { readSheFile } = await import('./excel');
-      const { byPeriod, errors, totalRows, supportRows } = await readSheFile(file);
+      const { byPeriod, errors, totalRows, supportRows, cocok, perluCek } = await readSheFile(file, buildPopIndex(pop));
       // Bandingkan dengan data sekarang: unit yang masih tampil tetapi tidak ada di berkas akan disembunyikan.
       let existing: AdminUnit[] | null = null;
       try {
@@ -51,7 +60,7 @@ export default function Import() {
           ? 'File ini tidak berisi unit section support (Kelompok NON UNIT/SUPPORT, perusahaan PPA/AMM).'
           : 'Berkas tidak berisi unit.');
       }
-      setPrev({ name: file.name, groups, errors, totalRows, supportRows });
+      setPrev({ name: file.name, groups, errors, totalRows, supportRows, popN: pop.length, cocok, perluCek });
     } catch { setErr('Berkas tidak bisa dibaca. Pastikan formatnya .xlsx atau .xls.'); }
     setReading(false);
     if (input.current) input.current.value = '';
@@ -98,7 +107,21 @@ export default function Import() {
       {prev && (
         <div className="im-prev">
           <h2 className="im-h">{prev.name}</h2>
-          {prev.totalRows > 0 && <p className="im-sum"><b className="cond">{nf.format(prev.supportRows)}</b> unit support dari {nf.format(prev.totalRows)} baris</p>}
+          {prev.totalRows > 0 && (
+            <p className="im-sum">
+              <b className="cond">{nf.format(prev.supportRows)}</b>
+              <span> unit support dari {nf.format(prev.totalRows)} baris{prev.popN > 0 && ` · ${nf.format(prev.cocok)} cocok populasi · ${nf.format(prev.perluCek.length)} perlu dicek`}</span>
+            </p>
+          )}
+          {prev.popN === 0 && <p className="im-errs">Populasi belum diunggah. Unit dipilih dari Kelompok Unit dan Perusahaan saja.</p>}
+          {prev.popN > 0 && prev.perluCek.length > 0 && (
+            <div className="im-lst">
+              <p><b>{nf.format(prev.perluCek.length)} unit perlu dicek</b></p>
+              <ul tabIndex={0} aria-label="Unit perlu dicek">
+                {prev.perluCek.map((c, i) => <li key={i}>{c.no_lambung}: {c.alasan === 'ganda' ? 'nama ganda di populasi' : 'tidak ada di populasi'}</li>)}
+              </ul>
+            </div>
+          )}
           {prev.groups.map((g) => (
             <dl key={g.label} className="im-card">
               <div className="im-per"><dt>Periode</dt><dd>{g.label}</dd></div>
