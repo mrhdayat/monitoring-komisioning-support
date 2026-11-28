@@ -34,7 +34,7 @@ export class DriveDisconnected extends Error {}
 class Gone extends Error {}
 
 const API = 'https://www.googleapis.com/drive/v3/files';
-const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,trashed';
+const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id';
 const FOLDER = 'application/vnd.google-apps.folder';
 
 export const getSetting = async (env: Env, k: string) =>
@@ -81,13 +81,20 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
     return r;
   };
   const mkFolder = async (name: string, parent?: string) => {
-    const r = await ok(await call(`${API}?fields=id,trashed`, {
+    const r = await ok(await call(`${API}?fields=id`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name, mimeType: FOLDER, ...(parent && { parents: [parent] }) }),
     }), 'folder');
-    const j = (await r.json()) as { id: string; trashed?: boolean };
-    if (j.trashed) { await delFile(j.id); throw new Gone(); } // induknya di tempat sampah
-    return j.id;
+    return ((await r.json()) as { id: string }).id;
+  };
+  // Folder tersimpan masih bisa dipakai? Folder yang dihapus di Drive biasanya masuk Sampah, dan Drive tetap menerima
+  // berkas baru di dalamnya dengan trashed:false. Jadi dicek dulu (1 GET). Berkas di bawah folder induk yang
+  // di-trash ikut trashed:true, maka cukup cek folder terdalam yang dipakai.
+  const alive = async (id: string) => {
+    const r = await call(`${API}/${encodeURIComponent(id)}?fields=trashed`);
+    if (r.status === 404) return false;
+    await ok(r, 'cek');
+    return !((await r.json()) as { trashed?: boolean }).trashed;
   };
   const delFile = async (id: string) => {
     const r = await call(`${API}/${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -97,8 +104,9 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
   // Klaim atomik: yang kalah menghapus folder buatannya dan memakai milik pemenang.
   const rootId = async () => {
     const have = await getSetting(env, 'drive_root_id');
-    if (have) return have;
-    const mine = await mkFolder('Komisioning'); // ponytail: root yang di-trash (bukan dihapus) tidak terdeteksi sampai upload pertama ke dalamnya; ditangkap lewat `trashed` di respons upload.
+    if (have && (await alive(have))) return have;
+    if (have) await env.DB.prepare("DELETE FROM pengaturan WHERE k = 'drive_root_id' AND v = ?").bind(have).run();
+    const mine = await mkFolder('Komisioning');
     await env.DB.prepare("INSERT INTO pengaturan (k, v) VALUES ('drive_root_id', ?) ON CONFLICT (k) DO NOTHING").bind(mine).run();
     const won = (await getSetting(env, 'drive_root_id'))!;
     if (won !== mine) await delFile(mine);
@@ -108,7 +116,8 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
     const p = await env.DB.prepare('SELECT label, drive_folder_id FROM periods WHERE id = ?').bind(periodId)
       .first<{ label: string; drive_folder_id: string | null }>();
     if (!p) throw new Error('periode_tidak_ada');
-    if (p.drive_folder_id) return p.drive_folder_id;
+    if (p.drive_folder_id && (await alive(p.drive_folder_id))) return p.drive_folder_id;
+    if (p.drive_folder_id) await env.DB.prepare('UPDATE periods SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(periodId, p.drive_folder_id).run();
     const root = await rootId();
     let mine: string;
     try {
@@ -129,7 +138,8 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
   // Folder unit di dalam folder periode (Komisioning/<periode>/<Code Unit>/), diklaim sama seperti folder periode.
   const unitFolder = async (unitId: number, periodId: number, folderName: string) => {
     const u = await env.DB.prepare('SELECT drive_folder_id FROM units WHERE id = ?').bind(unitId).first<{ drive_folder_id: string | null }>();
-    if (u?.drive_folder_id) return u.drive_folder_id;
+    if (u?.drive_folder_id && (await alive(u.drive_folder_id))) return u.drive_folder_id;
+    if (u?.drive_folder_id) await env.DB.prepare('UPDATE units SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(unitId, u.drive_folder_id).run();
     const parent = await periodFolder(periodId);
     let mine: string;
     try {
@@ -157,22 +167,20 @@ export function driveStore(env: Env, fetchImpl: typeof fetch = fetch): Store {
       `\r\n--${b}\r\nContent-Type: image/jpeg\r\n\r\n`, bytes, `\r\n--${b}--`,
     ]);
     const r = await call(UPLOAD, { method: 'POST', headers: { 'content-type': `multipart/related; boundary=${b}` }, body });
-    const j = r.ok ? ((await r.json()) as { id: string; trashed?: boolean }) : null;
-    // `trashed` di respons = berkas ikut tempat sampah karena foldernya di-trash: tanpa GET tambahan per upload.
-    if (r.status === 404 || j?.trashed) {
-      if (j) await delFile(j.id);
+    // 404 = folder dihapus permanen di antara cek dan upload: lupakan foldernya, ulangi.
+    if (r.status === 404) {
       await (inUnit
         ? env.DB.prepare('UPDATE units SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(unitId!, parent)
         : env.DB.prepare('UPDATE periods SET drive_folder_id = NULL WHERE id = ? AND drive_folder_id = ?').bind(periodId, parent)).run();
       throw new Gone();
     }
     await ok(r, 'upload');
-    return j!.id;
+    return ((await r.json()) as { id: string }).id;
   };
 
   return {
     async put(f) {
-      // Gone bisa bertingkat (folder unit → folder periode → root di-trash): ulang maks. 3 kali, lalu error biasa.
+      // Gone bisa bertingkat (folder unit → folder periode → root hilang): ulang maks. 3 kali, lalu error biasa.
       for (let i = 0; ; i++) {
         try {
           return await putOnce(f);
